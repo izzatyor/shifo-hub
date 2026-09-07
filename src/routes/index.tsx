@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff, HeartPulse, Loader2, Lock, Mail, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ export const Route = createFileRoute("/")({
 const ROLLAR = ["Admin", "Doktor", "Qabul", "Kassa", "Rahbar"];
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [parol, setParol] = useState("");
   const [korsat, setKorsat] = useState(false);
@@ -48,6 +49,7 @@ function LoginPage() {
       return;
     }
     toast.success("Xush kelibsiz!");
+    navigate({ to: "/dashboard" });
   }
 
   return (
