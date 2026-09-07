@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardBemorlarRouteImport } from './routes/dashboard.bemorlar'
+import { Route as DashboardHisobotRouteImport } from './routes/dashboard.hisobot'
 import { Route as DashboardPalatalarRouteImport } from './routes/dashboard.palatalar'
 import { Route as DashboardShifokorlarRouteImport } from './routes/dashboard.shifokorlar'
 import { Route as DashboardTolovlarRouteImport } from './routes/dashboard.tolovlar'
@@ -37,6 +38,11 @@ const DashboardBemorlarRoute = DashboardBemorlarRouteImport.update({
   path: '/bemorlar',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardHisobotRoute = DashboardHisobotRouteImport.update({
+  id: '/hisobot',
+  path: '/hisobot',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardPalatalarRoute = DashboardPalatalarRouteImport.update({
   id: '/palatalar',
   path: '/palatalar',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
+  '/dashboard/hisobot': typeof DashboardHisobotRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
   '/dashboard/tolovlar': typeof DashboardTolovlarRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
+  '/dashboard/hisobot': typeof DashboardHisobotRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
   '/dashboard/tolovlar': typeof DashboardTolovlarRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
+  '/dashboard/hisobot': typeof DashboardHisobotRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
   '/dashboard/tolovlar': typeof DashboardTolovlarRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/dashboard/bemorlar'
+    | '/dashboard/hisobot'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
     | '/dashboard/tolovlar'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard/bemorlar'
+    | '/dashboard/hisobot'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
     | '/dashboard/tolovlar'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/dashboard/bemorlar'
+    | '/dashboard/hisobot'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
     | '/dashboard/tolovlar'
@@ -144,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBemorlarRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/hisobot': {
+      id: '/dashboard/hisobot'
+      path: '/hisobot'
+      fullPath: '/dashboard/hisobot'
+      preLoaderRoute: typeof DashboardHisobotRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/palatalar': {
       id: '/dashboard/palatalar'
       path: '/palatalar'
@@ -170,6 +189,7 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardBemorlarRoute: typeof DashboardBemorlarRoute
+  DashboardHisobotRoute: typeof DashboardHisobotRoute
   DashboardPalatalarRoute: typeof DashboardPalatalarRoute
   DashboardShifokorlarRoute: typeof DashboardShifokorlarRoute
   DashboardTolovlarRoute: typeof DashboardTolovlarRoute
@@ -178,6 +198,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBemorlarRoute: DashboardBemorlarRoute,
+  DashboardHisobotRoute: DashboardHisobotRoute,
   DashboardPalatalarRoute: DashboardPalatalarRoute,
   DashboardShifokorlarRoute: DashboardShifokorlarRoute,
   DashboardTolovlarRoute: DashboardTolovlarRoute,
