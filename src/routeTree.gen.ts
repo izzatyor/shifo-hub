@@ -15,6 +15,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardBemorlarRouteImport } from './routes/dashboard.bemorlar'
 import { Route as DashboardPalatalarRouteImport } from './routes/dashboard.palatalar'
 import { Route as DashboardShifokorlarRouteImport } from './routes/dashboard.shifokorlar'
+import { Route as DashboardTolovlarRouteImport } from './routes/dashboard.tolovlar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +47,11 @@ const DashboardShifokorlarRoute = DashboardShifokorlarRouteImport.update({
   path: '/shifokorlar',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardTolovlarRoute = DashboardTolovlarRouteImport.update({
+  id: '/tolovlar',
+  path: '/tolovlar',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
+  '/dashboard/tolovlar': typeof DashboardTolovlarRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
+  '/dashboard/tolovlar': typeof DashboardTolovlarRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
+  '/dashboard/tolovlar': typeof DashboardTolovlarRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/dashboard/bemorlar'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
+    | '/dashboard/tolovlar'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/dashboard/bemorlar'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
+    | '/dashboard/tolovlar'
     | '/dashboard'
   id:
     | '__root__'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/dashboard/bemorlar'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
+    | '/dashboard/tolovlar'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -146,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardShifokorlarRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/tolovlar': {
+      id: '/dashboard/tolovlar'
+      path: '/tolovlar'
+      fullPath: '/dashboard/tolovlar'
+      preLoaderRoute: typeof DashboardTolovlarRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -153,6 +172,7 @@ interface DashboardRouteChildren {
   DashboardBemorlarRoute: typeof DashboardBemorlarRoute
   DashboardPalatalarRoute: typeof DashboardPalatalarRoute
   DashboardShifokorlarRoute: typeof DashboardShifokorlarRoute
+  DashboardTolovlarRoute: typeof DashboardTolovlarRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -160,6 +180,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBemorlarRoute: DashboardBemorlarRoute,
   DashboardPalatalarRoute: DashboardPalatalarRoute,
   DashboardShifokorlarRoute: DashboardShifokorlarRoute,
+  DashboardTolovlarRoute: DashboardTolovlarRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
