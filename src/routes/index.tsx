@@ -61,7 +61,7 @@ function LoginPage() {
           height={1536}
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-brand opacity-70" />
+        <div className="absolute inset-0 brand-gradient opacity-70" />
         <div className="relative flex h-full flex-col justify-between p-12">
           <div className="flex items-center gap-3 text-primary-foreground">
             <span className="flex size-11 items-center justify-center rounded-2xl bg-primary-foreground/15 backdrop-blur-sm">
@@ -90,7 +90,7 @@ function LoginPage() {
       <section className="flex w-full items-center justify-center px-6 py-12 lg:w-1/2">
         <div className="w-full max-w-md">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-gradient-brand text-primary-foreground">
+            <span className="flex size-11 items-center justify-center rounded-2xl brand-gradient text-primary-foreground">
               <HeartPulse className="size-6" />
             </span>
             <span className="text-lg font-semibold tracking-tight">Soliha Shifoxonasi</span>
@@ -157,7 +157,7 @@ function LoginPage() {
             <Button
               type="submit"
               disabled={yuklanmoqda}
-              className="h-12 w-full rounded-xl bg-gradient-brand text-base font-medium shadow-soft transition-shadow hover:shadow-lift"
+              className="h-12 w-full rounded-xl brand-gradient text-base font-medium shadow-soft transition-shadow hover:shadow-lift"
             >
               {yuklanmoqda ? <Loader2 className="size-4 animate-spin" /> : "Kirish"}
             </Button>
