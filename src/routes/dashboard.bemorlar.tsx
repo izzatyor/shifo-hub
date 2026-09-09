@@ -157,11 +157,15 @@ function BemorlarSahifa() {
   const palatalar = useQuery({
     queryKey: ["palatalar-select"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("rooms").select("id, number").order("number");
+      const { data, error } = await supabase
+        .from("rooms")
+        .select("id, number, room_type, bed_count")
+        .order("number");
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   const shifokorlar = useQuery({
     queryKey: ["shifokorlar-select"],
