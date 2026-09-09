@@ -157,11 +157,15 @@ function BemorlarSahifa() {
   const palatalar = useQuery({
     queryKey: ["palatalar-select"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("rooms").select("id, number").order("number");
+      const { data, error } = await supabase
+        .from("rooms")
+        .select("id, number, room_type, bed_count")
+        .order("number");
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   const shifokorlar = useQuery({
     queryKey: ["shifokorlar-select"],
@@ -205,7 +209,9 @@ function BemorlarSahifa() {
       setForma(bosh);
       setTahrirId(null);
       qc.invalidateQueries({ queryKey: ["bemorlar"] });
+      qc.invalidateQueries({ queryKey: ["palatalar"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
+
     },
     onError: (e: unknown) => {
       const msg = e instanceof z.ZodError ? e.issues[0]?.message : (e as Error).message;
@@ -222,7 +228,9 @@ function BemorlarSahifa() {
       toast.success("Bemor o'chirildi");
       setOchirish(null);
       qc.invalidateQueries({ queryKey: ["bemorlar"] });
+      qc.invalidateQueries({ queryKey: ["palatalar"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
+
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -455,7 +463,7 @@ function BemorlarSahifa() {
                 <SelectContent>
                   {(palatalar.data ?? []).map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.number}
+                      {p.number} · {p.room_type ?? "Oddiy"} ({p.bed_count} o'rin)
                     </SelectItem>
                   ))}
                 </SelectContent>
