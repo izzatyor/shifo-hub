@@ -86,17 +86,25 @@ const formaSxema = z.object({
   status: z.enum(["yotoqda", "ambulator"]),
 });
 
-const bosh = {
+type Forma = {
+  full_name: string;
+  phone: string;
+  birth_date: string;
+  gender: string;
+  room_id: string;
+  doctor_id: string;
+  status: "yotoqda" | "ambulator";
+};
+
+const bosh: Forma = {
   full_name: "",
   phone: "",
   birth_date: "",
   gender: "",
   room_id: "",
   doctor_id: "",
-  status: "ambulator" as const,
+  status: "ambulator",
 };
-
-type Forma = typeof bosh & { status: "yotoqda" | "ambulator" };
 
 function sana(v: string | null) {
   if (!v) return "—";
@@ -402,7 +410,7 @@ function BemorlarSahifa() {
             <div className="space-y-2">
               <Label>Jinsi</Label>
               <Select
-                value={forma.gender || undefined}
+                value={forma.gender}
                 onValueChange={(v) => setForma({ ...forma, gender: v })}
               >
                 <SelectTrigger className="rounded-xl">
@@ -434,7 +442,7 @@ function BemorlarSahifa() {
             <div className="space-y-2">
               <Label>Palata</Label>
               <Select
-                value={forma.room_id || undefined}
+                value={forma.room_id}
                 onValueChange={(v) => setForma({ ...forma, room_id: v })}
               >
                 <SelectTrigger className="rounded-xl">
@@ -457,7 +465,7 @@ function BemorlarSahifa() {
             <div className="space-y-2">
               <Label>Shifokor</Label>
               <Select
-                value={forma.doctor_id || undefined}
+                value={forma.doctor_id}
                 onValueChange={(v) => setForma({ ...forma, doctor_id: v })}
               >
                 <SelectTrigger className="rounded-xl">
