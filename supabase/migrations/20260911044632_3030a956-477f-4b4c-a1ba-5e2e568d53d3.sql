@@ -1,0 +1,16 @@
+GRANT SELECT ON public.clinics TO authenticated;
+GRANT ALL ON public.clinics TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+GRANT SELECT ON public.user_roles TO authenticated;
+GRANT ALL ON public.user_roles TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.doctors TO authenticated;
+GRANT ALL ON public.doctors TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.rooms TO authenticated;
+GRANT ALL ON public.rooms TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.patients TO authenticated;
+GRANT ALL ON public.patients TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.payments TO authenticated;
+GRANT ALL ON public.payments TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.notes TO authenticated;
+GRANT ALL ON public.notes TO service_role;
