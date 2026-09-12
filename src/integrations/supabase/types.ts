@@ -131,6 +131,7 @@ export type Database = {
         Row: {
           address: string | null
           admitted_at: string | null
+          benefit: string | null
           birth_date: string | null
           clinic_id: string
           created_at: string
@@ -140,13 +141,16 @@ export type Database = {
           full_name: string
           gender: string | null
           id: string
+          passport: string | null
           phone: string | null
           room_id: string | null
           status: Database["public"]["Enums"]["patient_status"]
+          workplace: string | null
         }
         Insert: {
           address?: string | null
           admitted_at?: string | null
+          benefit?: string | null
           birth_date?: string | null
           clinic_id: string
           created_at?: string
@@ -156,13 +160,16 @@ export type Database = {
           full_name: string
           gender?: string | null
           id?: string
+          passport?: string | null
           phone?: string | null
           room_id?: string | null
           status?: Database["public"]["Enums"]["patient_status"]
+          workplace?: string | null
         }
         Update: {
           address?: string | null
           admitted_at?: string | null
+          benefit?: string | null
           birth_date?: string | null
           clinic_id?: string
           created_at?: string
@@ -172,9 +179,11 @@ export type Database = {
           full_name?: string
           gender?: string | null
           id?: string
+          passport?: string | null
           phone?: string | null
           room_id?: string | null
           status?: Database["public"]["Enums"]["patient_status"]
+          workplace?: string | null
         }
         Relationships: [
           {
