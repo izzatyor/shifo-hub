@@ -114,7 +114,7 @@ function HisobotSahifa() {
       kunlar.push({
         sana: d,
         kalit: kunKalit(d),
-        label: KUN_QISQA[d.getDay()],
+        label: KUN_QISQA[d.getDay()] ?? "",
         summa: 0,
       });
     }
