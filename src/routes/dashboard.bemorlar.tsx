@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { format, parse } from "date-fns";
+import { CalendarIcon, Eye, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -28,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -44,15 +47,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { useProfil, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard/bemorlar")({
   head: () => ({
     meta: [
-      { title: "Bemorlar — Soliha Shifoxonasi" },
+      { title: "Bemorlar вЂ” Soliha Shifoxonasi" },
       { name: "description", content: "Klinika bemorlari ro'yxati, qidiruv va yangi bemor qo'shish." },
-      { property: "og:title", content: "Bemorlar — Soliha Shifoxonasi" },
+      { property: "og:title", content: "Bemorlar вЂ” Soliha Shifoxonasi" },
       { property: "og:description", content: "Bemorlarni qidiring, qo'shing va kuzating." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -70,20 +74,77 @@ type Bemor = {
   status: "yotoqda" | "ambulator" | "chiqarilgan";
   diagnosis: string | null;
   address: string | null;
+  passport: string | null;
+  workplace: string | null;
+  benefit: string | null;
   room_id: string | null;
   doctor_id: string | null;
   rooms: { number: string } | null;
   doctors: { full_name: string } | null;
 };
 
+/* ===================== TELEFON: +998 XX XXX XX XX ===================== */
+const TEL_PREFIX = "+998 ";
+
+/** Foydalanuvchi kiritgan ixtiyoriy matndan faqat 9 ta raqamni ("998" dan keyingisini) chiqarib oladi. */
+function telefonRaqamlari(qiymat: string) {
+  let raqamlar = qiymat.replace(/\D/g, "");
+  if (raqamlar.startsWith("998")) raqamlar = raqamlar.slice(3);
+  return raqamlar.slice(0, 9);
+}
+
+/** 9 ta xom raqamni "+998 90 123 45 67" ko'rinishida formatlaydi. */
+function telefonFormat(raqamlar: string) {
+  const kod = raqamlar.slice(0, 2);
+  const uch = raqamlar.slice(2, 5);
+  const ikki1 = raqamlar.slice(5, 7);
+  const ikki2 = raqamlar.slice(7, 9);
+  let natija = TEL_PREFIX;
+  if (kod) natija += kod;
+  if (uch) natija += " " + uch;
+  if (ikki1) natija += " " + ikki1;
+  if (ikki2) natija += " " + ikki2;
+  return natija;
+}
+
+function telefonDbGa(qiymat: string) {
+  const raqamlar = telefonRaqamlari(qiymat);
+  return raqamlar ? `+998${raqamlar}` : "";
+}
+
+function telefonKorsatish(dbQiymat: string | null) {
+  if (!dbQiymat) return "";
+  return telefonFormat(telefonRaqamlari(dbQiymat));
+}
+
+const TELEFON_TOLIQ_UZUNLIK = TEL_PREFIX.length + 9 + 3; // "+998 " + 9 raqam + 3 bo'shliq
+
+/* ===================== SANA: kun.oy.yil <-> yyyy-MM-dd ===================== */
+function sanaKursatish(isoOrNull: string) {
+  if (!isoOrNull) return undefined;
+  const d = parse(isoOrNull, "yyyy-MM-dd", new Date());
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
+
 const formaSxema = z.object({
   full_name: z.string().trim().min(2, "Ism kamida 2 ta belgidan iborat bo'lsin").max(100),
-  phone: z.string().trim().max(30).optional().or(z.literal("")),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || telefonRaqamlari(v).length === 9, {
+      message: "Telefon raqami to'liq kiritilishi kerak",
+    }),
   birth_date: z.string().trim().max(20).optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   room_id: z.string().optional().or(z.literal("")),
   doctor_id: z.string().optional().or(z.literal("")),
   status: z.enum(["yotoqda", "ambulator"]),
+  address: z.string().trim().max(200).optional().or(z.literal("")),
+  passport: z.string().trim().max(20).optional().or(z.literal("")),
+  workplace: z.string().trim().max(150).optional().or(z.literal("")),
+  benefit: z.string().optional().or(z.literal("")),
 });
 
 type Forma = {
@@ -94,6 +155,10 @@ type Forma = {
   room_id: string;
   doctor_id: string;
   status: "yotoqda" | "ambulator";
+  address: string;
+  passport: string;
+  workplace: string;
+  benefit: string;
 };
 
 const bosh: Forma = {
@@ -104,12 +169,16 @@ const bosh: Forma = {
   room_id: "",
   doctor_id: "",
   status: "ambulator",
+  address: "",
+  passport: "",
+  workplace: "",
+  benefit: "Pulli",
 };
 
 function sana(v: string | null) {
-  if (!v) return "—";
+  if (!v) return "вЂ”";
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("uz-UZ");
+  return Number.isNaN(d.getTime()) ? "вЂ”" : d.toLocaleDateString("uz-UZ");
 }
 
 function holatBadge(s: Bemor["status"]) {
@@ -139,6 +208,7 @@ function BemorlarSahifa() {
   const [tahrirId, setTahrirId] = useState<string | null>(null);
   const [korish, setKorish] = useState<Bemor | null>(null);
   const [ochirish, setOchirish] = useState<Bemor | null>(null);
+  const [sanaOchiq, setSanaOchiq] = useState(false);
 
   const bemorlar = useQuery({
     queryKey: ["bemorlar"],
@@ -146,7 +216,7 @@ function BemorlarSahifa() {
       const { data, error } = await supabase
         .from("patients")
         .select(
-          "id, full_name, phone, birth_date, gender, status, diagnosis, address, room_id, doctor_id, rooms(number), doctors(full_name)",
+          "id, full_name, phone, birth_date, gender, status, diagnosis, address, passport, workplace, benefit, room_id, doctor_id, rooms(number), doctors(full_name)",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -165,7 +235,6 @@ function BemorlarSahifa() {
       return data ?? [];
     },
   });
-
 
   const shifokorlar = useQuery({
     queryKey: ["shifokorlar-select"],
@@ -187,12 +256,16 @@ function BemorlarSahifa() {
       const yozuv = {
         clinic_id: clinicId,
         full_name: parsed.full_name,
-        phone: parsed.phone || null,
+        phone: telefonDbGa(parsed.phone ?? "") || null,
         birth_date: parsed.birth_date || null,
         gender: parsed.gender || null,
         room_id: parsed.room_id || null,
         doctor_id: parsed.doctor_id || null,
         status: parsed.status,
+        address: parsed.address || null,
+        passport: parsed.passport || null,
+        workplace: parsed.workplace || null,
+        benefit: parsed.benefit || "Pulli",
         admitted_at: parsed.status === "yotoqda" ? new Date().toISOString() : null,
       };
       if (tahrirId) {
@@ -211,7 +284,6 @@ function BemorlarSahifa() {
       qc.invalidateQueries({ queryKey: ["bemorlar"] });
       qc.invalidateQueries({ queryKey: ["palatalar"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
-
     },
     onError: (e: unknown) => {
       const msg = e instanceof z.ZodError ? e.issues[0]?.message : (e as Error).message;
@@ -230,7 +302,6 @@ function BemorlarSahifa() {
       qc.invalidateQueries({ queryKey: ["bemorlar"] });
       qc.invalidateQueries({ queryKey: ["palatalar"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
-
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -255,14 +326,41 @@ function BemorlarSahifa() {
     setTahrirId(b.id);
     setForma({
       full_name: b.full_name,
-      phone: b.phone ?? "",
+      phone: telefonKorsatish(b.phone),
       birth_date: b.birth_date ?? "",
       gender: b.gender ?? "",
       room_id: b.room_id ?? "",
       doctor_id: b.doctor_id ?? "",
       status: b.status === "chiqarilgan" ? "ambulator" : b.status,
+      address: b.address ?? "",
+      passport: b.passport ?? "",
+      workplace: b.workplace ?? "",
+      benefit: b.benefit ?? "Pulli",
     });
     setOchiq(true);
+  }
+
+  function telefonOzgardi(e: ChangeEvent<HTMLInputElement>) {
+    const raqamlar = telefonRaqamlari(e.target.value);
+    setForma({ ...forma, phone: raqamlar ? telefonFormat(raqamlar) : "" });
+  }
+
+  function telefonFokusda() {
+    if (!forma.phone) setForma({ ...forma, phone: TEL_PREFIX });
+  }
+
+  function telefonKlaviatura(e: KeyboardEvent<HTMLInputElement>) {
+    // Prefiks o'chirilib ketmasin: kursor prefiks ichida bo'lsa Backspace/Delete e'tiborsiz qoldiriladi
+    const input = e.currentTarget;
+    if (
+      (e.key === "Backspace" || e.key === "Delete") &&
+      input.selectionStart !== null &&
+      input.selectionStart <= TEL_PREFIX.length &&
+      input.selectionEnd !== null &&
+      input.selectionEnd <= TEL_PREFIX.length
+    ) {
+      e.preventDefault();
+    }
   }
 
   return (
@@ -320,11 +418,13 @@ function BemorlarSahifa() {
                   {royxat.map((b) => (
                     <TableRow key={b.id}>
                       <TableCell className="font-medium">{b.full_name}</TableCell>
-                      <TableCell>{b.phone ?? "—"}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {telefonKorsatish(b.phone) || "вЂ”"}
+                      </TableCell>
                       <TableCell>{sana(b.birth_date)}</TableCell>
-                      <TableCell>{b.gender ?? "—"}</TableCell>
-                      <TableCell>{b.rooms?.number ?? "—"}</TableCell>
-                      <TableCell>{b.doctors?.full_name ?? "—"}</TableCell>
+                      <TableCell>{b.gender ?? "вЂ”"}</TableCell>
+                      <TableCell>{b.rooms?.number ?? "вЂ”"}</TableCell>
+                      <TableCell>{b.doctors?.full_name ?? "вЂ”"}</TableCell>
                       <TableCell>{holatBadge(b.status)}</TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
@@ -367,7 +467,7 @@ function BemorlarSahifa() {
       </Card>
 
       <Dialog open={ochiq} onOpenChange={setOchiq}>
-        <DialogContent className="max-w-lg rounded-2xl">
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle>{tahrirId ? "Bemorni tahrirlash" : "Yangi bemor"}</DialogTitle>
             <DialogDescription>Bemor ma'lumotlarini to'ldiring.</DialogDescription>
@@ -386,6 +486,7 @@ function BemorlarSahifa() {
                 id="ism"
                 required
                 maxLength={100}
+                placeholder="Alimov Vali Aliyevich"
                 className="rounded-xl"
                 value={forma.full_name}
                 onChange={(e) => setForma({ ...forma, full_name: e.target.value })}
@@ -396,23 +497,51 @@ function BemorlarSahifa() {
               <Label htmlFor="tel">Telefon</Label>
               <Input
                 id="tel"
-                maxLength={30}
-                className="rounded-xl"
-                placeholder="+998 90 000 00 00"
+                inputMode="numeric"
+                maxLength={TELEFON_TOLIQ_UZUNLIK}
+                className="rounded-xl font-mono"
+                placeholder="+998 90 123 45 67"
                 value={forma.phone}
-                onChange={(e) => setForma({ ...forma, phone: e.target.value })}
+                onFocus={telefonFokusda}
+                onChange={telefonOzgardi}
+                onKeyDown={telefonKlaviatura}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tsana">Tug'ilgan sana</Label>
-              <Input
-                id="tsana"
-                type="date"
-                className="rounded-xl"
-                value={forma.birth_date}
-                onChange={(e) => setForma({ ...forma, birth_date: e.target.value })}
-              />
+              <Label>Tug'ilgan sana</Label>
+              <Popover open={sanaOchiq} onOpenChange={setSanaOchiq}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start rounded-xl font-normal",
+                      !forma.birth_date && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 size-4" />
+                    {forma.birth_date
+                      ? format(sanaKursatish(forma.birth_date) ?? new Date(), "dd.MM.yyyy")
+                      : "Sanani tanlang"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    captionLayout="dropdown"
+                    startMonth={new Date(1930, 0)}
+                    endMonth={new Date()}
+                    selected={sanaKursatish(forma.birth_date)}
+                    onSelect={(d) => {
+                      setForma({ ...forma, birth_date: d ? format(d, "yyyy-MM-dd") : "" });
+                      setSanaOchiq(false);
+                    }}
+                    disabled={{ after: new Date() }}
+                    autoFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
@@ -463,7 +592,7 @@ function BemorlarSahifa() {
                 <SelectContent>
                   {(palatalar.data ?? []).map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.number} · {p.room_type ?? "Oddiy"} ({p.bed_count} o'rin)
+                      {p.number} В· {p.room_type ?? "Oddiy"} ({p.bed_count} o'rin)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -493,6 +622,58 @@ function BemorlarSahifa() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Imtiyoz turi</Label>
+              <Select
+                value={forma.benefit}
+                onValueChange={(v) => setForma({ ...forma, benefit: v })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pulli">Pulli</SelectItem>
+                  <SelectItem value="Nogironlik">Nogironlik</SelectItem>
+                  <SelectItem value="Faxriy">Faxriy</SelectItem>
+                  <SelectItem value="Boshqa">Boshqa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="passport">Pasport raqami</Label>
+              <Input
+                id="passport"
+                maxLength={20}
+                className="rounded-xl"
+                placeholder="AB1234567"
+                value={forma.passport}
+                onChange={(e) => setForma({ ...forma, passport: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ishjoyi">Ish joyi</Label>
+              <Input
+                id="ishjoyi"
+                maxLength={150}
+                className="rounded-xl"
+                value={forma.workplace}
+                onChange={(e) => setForma({ ...forma, workplace: e.target.value })}
+              />
+            </div>
+
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="manzil">Uy manzili</Label>
+              <Input
+                id="manzil"
+                maxLength={200}
+                className="rounded-xl"
+                value={forma.address}
+                onChange={(e) => setForma({ ...forma, address: e.target.value })}
+              />
+            </div>
+
             <DialogFooter className="sm:col-span-2">
               <Button
                 type="button"
@@ -519,17 +700,25 @@ function BemorlarSahifa() {
           </DialogHeader>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <dt className="text-muted-foreground">Telefon</dt>
-            <dd>{korish?.phone ?? "—"}</dd>
+            <dd className="font-mono">{telefonKorsatish(korish?.phone ?? null) || "вЂ”"}</dd>
             <dt className="text-muted-foreground">Tug'ilgan sana</dt>
             <dd>{sana(korish?.birth_date ?? null)}</dd>
             <dt className="text-muted-foreground">Jinsi</dt>
-            <dd>{korish?.gender ?? "—"}</dd>
+            <dd>{korish?.gender ?? "вЂ”"}</dd>
             <dt className="text-muted-foreground">Palata</dt>
-            <dd>{korish?.rooms?.number ?? "—"}</dd>
+            <dd>{korish?.rooms?.number ?? "вЂ”"}</dd>
             <dt className="text-muted-foreground">Shifokor</dt>
-            <dd>{korish?.doctors?.full_name ?? "—"}</dd>
+            <dd>{korish?.doctors?.full_name ?? "вЂ”"}</dd>
+            <dt className="text-muted-foreground">Pasport</dt>
+            <dd>{korish?.passport ?? "вЂ”"}</dd>
+            <dt className="text-muted-foreground">Ish joyi</dt>
+            <dd>{korish?.workplace ?? "вЂ”"}</dd>
+            <dt className="text-muted-foreground">Imtiyoz</dt>
+            <dd>{korish?.benefit ?? "вЂ”"}</dd>
+            <dt className="text-muted-foreground">Manzil</dt>
+            <dd className="col-span-1">{korish?.address ?? "вЂ”"}</dd>
             <dt className="text-muted-foreground">Tashxis</dt>
-            <dd>{korish?.diagnosis ?? "—"}</dd>
+            <dd>{korish?.diagnosis ?? "вЂ”"}</dd>
             <dt className="text-muted-foreground">Holat</dt>
             <dd>{korish ? holatBadge(korish.status) : null}</dd>
           </dl>
