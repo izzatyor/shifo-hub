@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
 import { CalendarIcon, Eye, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
@@ -119,6 +119,23 @@ function telefonKorsatish(dbQiymat: string | null) {
 
 const TELEFON_TOLIQ_UZUNLIK = TEL_PREFIX.length + 9 + 3; // "+998 " + 9 raqam + 3 bo'shliq
 
+/* ===================== PASPORT: AA1234567 ===================== */
+/** Kiritilgan matndan pasport uchun ruxsat etilgan belgilarni ajratib oladi: 2 harf + 7 raqam. */
+function pasportTozala(qiymat: string) {
+  const harflar = qiymat
+    .replace(/[^A-Za-zРђ-РЇР°-СЏ]/g, "")
+    .toUpperCase()
+    .slice(0, 2);
+  const raqamlar = qiymat.replace(/\D/g, "").slice(0, 7);
+  return { harflar, raqamlar };
+}
+
+function pasportBirlashtir(harflar: string, raqamlar: string) {
+  return `${harflar}${raqamlar}`;
+}
+
+const PASPORT_REGEX = /^[A-Z]{2}\d{7}$/;
+
 /* ===================== SANA: kun.oy.yil <-> yyyy-MM-dd ===================== */
 function sanaKursatish(isoOrNull: string) {
   if (!isoOrNull) return undefined;
@@ -127,24 +144,34 @@ function sanaKursatish(isoOrNull: string) {
 }
 
 const formaSxema = z.object({
-  full_name: z.string().trim().min(2, "Ism kamida 2 ta belgidan iborat bo'lsin").max(100),
+  full_name: z
+    .string()
+    .trim()
+    .min(1, "Ism familiya kiritilishi shart")
+    .min(2, "Ism kamida 2 ta belgidan iborat bo'lsin")
+    .max(100, "Ism 100 ta belgidan oshmasin"),
   phone: z
     .string()
     .trim()
-    .optional()
-    .or(z.literal(""))
-    .refine((v) => !v || telefonRaqamlari(v).length === 9, {
-      message: "Telefon raqami to'liq kiritilishi kerak",
+    .min(1, "Telefon raqami kiritilishi shart")
+    .refine((v) => telefonRaqamlari(v).length === 9, {
+      message: "Telefon raqami to'liq kiritilishi kerak (9 ta raqam)",
     }),
-  birth_date: z.string().trim().max(20).optional().or(z.literal("")),
-  gender: z.string().optional().or(z.literal("")),
-  room_id: z.string().optional().or(z.literal("")),
+  birth_date: z.string().trim().min(1, "Tug'ilgan sana tanlanishi shart").max(20),
+  gender: z.string().trim().min(1, "Jinsi tanlanishi shart"),
+  room_id: z.string().trim().min(1, "Palata tanlanishi shart"),
   doctor_id: z.string().optional().or(z.literal("")),
-  status: z.enum(["yotoqda", "ambulator"]),
-  address: z.string().trim().max(200).optional().or(z.literal("")),
-  passport: z.string().trim().max(20).optional().or(z.literal("")),
+  status: z.enum(["yotoqda", "ambulator"], {
+    message: "Xizmat turi tanlanishi shart",
+  }),
+  address: z.string().trim().min(1, "Uy manzili kiritilishi shart").max(200),
+  passport: z
+    .string()
+    .trim()
+    .min(1, "Pasport raqami kiritilishi shart")
+    .regex(PASPORT_REGEX, "Pasport formati noto'g'ri (masalan: AB1234567)"),
   workplace: z.string().trim().max(150).optional().or(z.literal("")),
-  benefit: z.string().optional().or(z.literal("")),
+  benefit: z.string().trim().min(1, "Imtiyoz turi tanlanishi shart"),
 });
 
 type Forma = {
@@ -196,6 +223,11 @@ function holatBadge(s: Bemor["status"]) {
   );
 }
 
+function XatoMatni({ xabar }: { xabar?: string }) {
+  if (!xabar) return null;
+  return <p className="text-xs font-medium text-destructive">{xabar}</p>;
+}
+
 function BemorlarSahifa() {
   const qc = useQueryClient();
   const { session } = useSession();
@@ -209,6 +241,7 @@ function BemorlarSahifa() {
   const [korish, setKorish] = useState<Bemor | null>(null);
   const [ochirish, setOchirish] = useState<Bemor | null>(null);
   const [sanaOchiq, setSanaOchiq] = useState(false);
+  const [xatolar, setXatolar] = useState<Record<string, string>>({});
 
   const bemorlar = useQuery({
     queryKey: ["bemorlar"],
@@ -281,13 +314,23 @@ function BemorlarSahifa() {
       setOchiq(false);
       setForma(bosh);
       setTahrirId(null);
+      setXatolar({});
       qc.invalidateQueries({ queryKey: ["bemorlar"] });
       qc.invalidateQueries({ queryKey: ["palatalar"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
     },
     onError: (e: unknown) => {
-      const msg = e instanceof z.ZodError ? e.issues[0]?.message : (e as Error).message;
-      toast.error(msg ?? "Xatolik yuz berdi");
+      if (e instanceof z.ZodError) {
+        const yangiXatolar: Record<string, string> = {};
+        for (const issue of e.issues) {
+          const maydon = String(issue.path[0]);
+          if (!yangiXatolar[maydon]) yangiXatolar[maydon] = issue.message;
+        }
+        setXatolar(yangiXatolar);
+        toast.error("Iltimos, formadagi xatolarni to'g'rilang");
+        return;
+      }
+      toast.error((e as Error).message ?? "Xatolik yuz berdi");
     },
   });
 
@@ -361,6 +404,37 @@ function BemorlarSahifa() {
     ) {
       e.preventDefault();
     }
+  }
+
+  function pasportOzgardi(e: ChangeEvent<HTMLInputElement>) {
+    const { harflar, raqamlar: eskiRaqamlar } = pasportTozala(forma.passport);
+    const kiritilgan = e.target.value.toUpperCase();
+    // Foydalanuvchi harflar qismini o'zgartirdimi yoki raqamlarniРјi вЂ” soddalashtirib, umumiy tozalash
+    const { harflar: yangiHarflar, raqamlar: yangiRaqamlar } = pasportTozala(kiritilgan);
+    void harflar;
+    void eskiRaqamlar;
+    setForma({ ...forma, passport: pasportBirlashtir(yangiHarflar, yangiRaqamlar) });
+  }
+
+  function maydonXato(nomi: string) {
+    return xatolar[nomi];
+  }
+
+  function submitQil(e: FormEvent) {
+    e.preventDefault();
+    const natija = formaSxema.safeParse(forma);
+    if (!natija.success) {
+      const yangiXatolar: Record<string, string> = {};
+      for (const issue of natija.error.issues) {
+        const maydon = String(issue.path[0]);
+        if (!yangiXatolar[maydon]) yangiXatolar[maydon] = issue.message;
+      }
+      setXatolar(yangiXatolar);
+      toast.error("Iltimos, formadagi xatolarni to'g'rilang");
+      return;
+    }
+    setXatolar({});
+    saqlash.mutate(forma);
   }
 
   return (
@@ -473,43 +547,50 @@ function BemorlarSahifa() {
             <DialogDescription>Bemor ma'lumotlarini to'ldiring.</DialogDescription>
           </DialogHeader>
 
-          <form
-            className="grid gap-4 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              saqlash.mutate(forma);
-            }}
-          >
+          <form className="grid gap-4 sm:grid-cols-2" onSubmit={submitQil} noValidate>
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="ism">Ism familiya</Label>
+              <Label htmlFor="ism">
+                Ism familiya <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="ism"
-                required
                 maxLength={100}
                 placeholder="Alimov Vali Aliyevich"
-                className="rounded-xl"
+                className={cn("rounded-xl", maydonXato("full_name") && "border-destructive focus-visible:ring-destructive")}
                 value={forma.full_name}
-                onChange={(e) => setForma({ ...forma, full_name: e.target.value })}
+                onChange={(e) => {
+                  setForma({ ...forma, full_name: e.target.value });
+                  if (xatolar.full_name) setXatolar({ ...xatolar, full_name: "" });
+                }}
               />
+              <XatoMatni xabar={maydonXato("full_name")} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tel">Telefon</Label>
+              <Label htmlFor="tel">
+                Telefon <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="tel"
                 inputMode="numeric"
                 maxLength={TELEFON_TOLIQ_UZUNLIK}
-                className="rounded-xl font-mono"
+                className={cn("rounded-xl font-mono", maydonXato("phone") && "border-destructive focus-visible:ring-destructive")}
                 placeholder="+998 90 123 45 67"
                 value={forma.phone}
                 onFocus={telefonFokusda}
-                onChange={telefonOzgardi}
+                onChange={(e) => {
+                  telefonOzgardi(e);
+                  if (xatolar.phone) setXatolar({ ...xatolar, phone: "" });
+                }}
                 onKeyDown={telefonKlaviatura}
               />
+              <XatoMatni xabar={maydonXato("phone")} />
             </div>
 
             <div className="space-y-2">
-              <Label>Tug'ilgan sana</Label>
+              <Label>
+                Tug'ilgan sana <span className="text-destructive">*</span>
+              </Label>
               <Popover open={sanaOchiq} onOpenChange={setSanaOchiq}>
                 <PopoverTrigger asChild>
                   <Button
@@ -518,6 +599,7 @@ function BemorlarSahifa() {
                     className={cn(
                       "w-full justify-start rounded-xl font-normal",
                       !forma.birth_date && "text-muted-foreground",
+                      maydonXato("birth_date") && "border-destructive text-destructive",
                     )}
                   >
                     <CalendarIcon className="mr-2 size-4" />
@@ -536,21 +618,28 @@ function BemorlarSahifa() {
                     onSelect={(d) => {
                       setForma({ ...forma, birth_date: d ? format(d, "yyyy-MM-dd") : "" });
                       setSanaOchiq(false);
+                      if (xatolar.birth_date) setXatolar({ ...xatolar, birth_date: "" });
                     }}
                     disabled={{ after: new Date() }}
                     autoFocus
                   />
                 </PopoverContent>
               </Popover>
+              <XatoMatni xabar={maydonXato("birth_date")} />
             </div>
 
             <div className="space-y-2">
-              <Label>Jinsi</Label>
+              <Label>
+                Jinsi <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={forma.gender}
-                onValueChange={(v) => setForma({ ...forma, gender: v })}
+                onValueChange={(v) => {
+                  setForma({ ...forma, gender: v });
+                  if (xatolar.gender) setXatolar({ ...xatolar, gender: "" });
+                }}
               >
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger className={cn("rounded-xl", maydonXato("gender") && "border-destructive")}>
                   <SelectValue placeholder="Tanlang" />
                 </SelectTrigger>
                 <SelectContent>
@@ -558,6 +647,7 @@ function BemorlarSahifa() {
                   <SelectItem value="Ayol">Ayol</SelectItem>
                 </SelectContent>
               </Select>
+              <XatoMatni xabar={maydonXato("gender")} />
             </div>
 
             <div className="space-y-2">
@@ -576,16 +666,26 @@ function BemorlarSahifa() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Palata</Label>
+            <div className="sm:col-span-2 space-y-2">
+              <Label>
+                Palata <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={forma.room_id}
-                onValueChange={(v) => setForma({ ...forma, room_id: v })}
+                onValueChange={(v) => {
+                  setForma({ ...forma, room_id: v });
+                  if (xatolar.room_id) setXatolar({ ...xatolar, room_id: "" });
+                }}
               >
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger
+                  className={cn(
+                    "rounded-xl border-2 border-primary/40 bg-primary/5 font-medium",
+                    maydonXato("room_id") && "border-destructive bg-transparent",
+                  )}
+                >
                   <SelectValue
                     placeholder={
-                      (palatalar.data ?? []).length ? "Tanlang" : "Palatalar mavjud emas"
+                      (palatalar.data ?? []).length ? "Palatani tanlang" : "Palatalar mavjud emas"
                     }
                   />
                 </SelectTrigger>
@@ -597,6 +697,7 @@ function BemorlarSahifa() {
                   ))}
                 </SelectContent>
               </Select>
+              <XatoMatni xabar={maydonXato("room_id")} />
             </div>
 
             <div className="space-y-2">
@@ -623,12 +724,17 @@ function BemorlarSahifa() {
             </div>
 
             <div className="space-y-2">
-              <Label>Imtiyoz turi</Label>
+              <Label>
+                Imtiyoz turi <span className="text-destructive">*</span>
+              </Label>
               <Select
                 value={forma.benefit}
-                onValueChange={(v) => setForma({ ...forma, benefit: v })}
+                onValueChange={(v) => {
+                  setForma({ ...forma, benefit: v });
+                  if (xatolar.benefit) setXatolar({ ...xatolar, benefit: "" });
+                }}
               >
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger className={cn("rounded-xl", maydonXato("benefit") && "border-destructive")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -638,18 +744,28 @@ function BemorlarSahifa() {
                   <SelectItem value="Boshqa">Boshqa</SelectItem>
                 </SelectContent>
               </Select>
+              <XatoMatni xabar={maydonXato("benefit")} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="passport">Pasport raqami</Label>
+              <Label htmlFor="passport">
+                Pasport raqami <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="passport"
-                maxLength={20}
-                className="rounded-xl"
+                maxLength={9}
+                className={cn(
+                  "rounded-xl font-mono text-base tracking-wider",
+                  maydonXato("passport") && "border-destructive focus-visible:ring-destructive",
+                )}
                 placeholder="AB1234567"
                 value={forma.passport}
-                onChange={(e) => setForma({ ...forma, passport: e.target.value })}
+                onChange={(e) => {
+                  pasportOzgardi(e);
+                  if (xatolar.passport) setXatolar({ ...xatolar, passport: "" });
+                }}
               />
+              <XatoMatni xabar={maydonXato("passport")} />
             </div>
 
             <div className="space-y-2">
@@ -664,14 +780,20 @@ function BemorlarSahifa() {
             </div>
 
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="manzil">Uy manzili</Label>
+              <Label htmlFor="manzil">
+                Uy manzili <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="manzil"
                 maxLength={200}
-                className="rounded-xl"
+                className={cn("rounded-xl", maydonXato("address") && "border-destructive focus-visible:ring-destructive")}
                 value={forma.address}
-                onChange={(e) => setForma({ ...forma, address: e.target.value })}
+                onChange={(e) => {
+                  setForma({ ...forma, address: e.target.value });
+                  if (xatolar.address) setXatolar({ ...xatolar, address: "" });
+                }}
               />
+              <XatoMatni xabar={maydonXato("address")} />
             </div>
 
             <DialogFooter className="sm:col-span-2">
