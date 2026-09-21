@@ -123,7 +123,7 @@ const TELEFON_TOLIQ_UZUNLIK = TEL_PREFIX.length + 9 + 3; // "+998 " + 9 raqam + 
 /** Kiritilgan matndan pasport uchun ruxsat etilgan belgilarni ajratib oladi: 2 harf + 7 raqam. */
 function pasportTozala(qiymat: string) {
   const harflar = qiymat
-    .replace(/[^A-Za-zРђ-РЇР°-СЏ]/g, "")
+    .replace(/[^A-Za-z\u0400-\u04FF]/g, "")
     .toUpperCase()
     .slice(0, 2);
   const raqamlar = qiymat.replace(/\D/g, "").slice(0, 7);
