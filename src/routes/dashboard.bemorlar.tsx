@@ -223,7 +223,7 @@ function holatBadge(s: Bemor["status"]) {
   );
 }
 
-function XatoMatni({ xabar }: { xabar?: string }) {
+function XatoMatni({ xabar }: { xabar?: string | undefined }) {
   if (!xabar) return null;
   return <p className="text-xs font-medium text-destructive">{xabar}</p>;
 }
@@ -618,7 +618,7 @@ function BemorlarSahifa() {
                     onSelect={(d) => {
                       setForma({ ...forma, birth_date: d ? format(d, "yyyy-MM-dd") : "" });
                       setSanaOchiq(false);
-                      if (xatolar.birth_date) setXatolar({ ...xatolar, birth_date: "" });
+                      if (xatolar["birth_date"]) setXatolar({ ...xatolar, birth_date: "" });
                     }}
                     disabled={{ after: new Date() }}
                     autoFocus
@@ -636,7 +636,7 @@ function BemorlarSahifa() {
                 value={forma.gender}
                 onValueChange={(v) => {
                   setForma({ ...forma, gender: v });
-                  if (xatolar.gender) setXatolar({ ...xatolar, gender: "" });
+                  if (xatolar["gender"]) setXatolar({ ...xatolar, gender: "" });
                 }}
               >
                 <SelectTrigger className={cn("rounded-xl", maydonXato("gender") && "border-destructive")}>
@@ -674,7 +674,7 @@ function BemorlarSahifa() {
                 value={forma.room_id}
                 onValueChange={(v) => {
                   setForma({ ...forma, room_id: v });
-                  if (xatolar.room_id) setXatolar({ ...xatolar, room_id: "" });
+                  if (xatolar["room_id"]) setXatolar({ ...xatolar, room_id: "" });
                 }}
               >
                 <SelectTrigger
@@ -731,7 +731,7 @@ function BemorlarSahifa() {
                 value={forma.benefit}
                 onValueChange={(v) => {
                   setForma({ ...forma, benefit: v });
-                  if (xatolar.benefit) setXatolar({ ...xatolar, benefit: "" });
+                  if (xatolar["benefit"]) setXatolar({ ...xatolar, benefit: "" });
                 }}
               >
                 <SelectTrigger className={cn("rounded-xl", maydonXato("benefit") && "border-destructive")}>
@@ -762,7 +762,7 @@ function BemorlarSahifa() {
                 value={forma.passport}
                 onChange={(e) => {
                   pasportOzgardi(e);
-                  if (xatolar.passport) setXatolar({ ...xatolar, passport: "" });
+                  if (xatolar["passport"]) setXatolar({ ...xatolar, passport: "" });
                 }}
               />
               <XatoMatni xabar={maydonXato("passport")} />
@@ -790,7 +790,7 @@ function BemorlarSahifa() {
                 value={forma.address}
                 onChange={(e) => {
                   setForma({ ...forma, address: e.target.value });
-                  if (xatolar.address) setXatolar({ ...xatolar, address: "" });
+                  if (xatolar["address"]) setXatolar({ ...xatolar, address: "" });
                 }}
               />
               <XatoMatni xabar={maydonXato("address")} />
