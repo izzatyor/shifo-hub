@@ -560,7 +560,7 @@ function BemorlarSahifa() {
                 value={forma.full_name}
                 onChange={(e) => {
                   setForma({ ...forma, full_name: e.target.value });
-                  if (xatolar.full_name) setXatolar({ ...xatolar, full_name: "" });
+                  if (xatolar["full_name"]) setXatolar({ ...xatolar, full_name: "" });
                 }}
               />
               <XatoMatni xabar={maydonXato("full_name")} />
@@ -580,7 +580,7 @@ function BemorlarSahifa() {
                 onFocus={telefonFokusda}
                 onChange={(e) => {
                   telefonOzgardi(e);
-                  if (xatolar.phone) setXatolar({ ...xatolar, phone: "" });
+                  if (xatolar["phone"]) setXatolar({ ...xatolar, phone: "" });
                 }}
                 onKeyDown={telefonKlaviatura}
               />
