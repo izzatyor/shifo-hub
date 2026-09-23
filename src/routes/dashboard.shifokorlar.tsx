@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfil, useSession } from "@/hooks/useAuth";
+import { useRuxsat } from "@/hooks/useRuxsat";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -135,6 +136,7 @@ function ShifokorlarSahifa() {
   const { session } = useSession();
   const { data: profil } = useProfil(session?.user.id);
   const clinicId = profil?.clinicId ?? null;
+  const { faqatKorish } = useRuxsat(profil?.rollar ?? []);
 
   const [qidiruv, setQidiruv] = useState("");
   const [ochiq, setOchiq] = useState(false);
@@ -301,9 +303,11 @@ function ShifokorlarSahifa() {
             Klinika shifokorlari, mutaxassisliklari va faol bemorlari.
           </p>
         </div>
-        <Button className="rounded-xl" onClick={yangiOch}>
-          <Plus className="size-4" /> Yangi shifokor
-        </Button>
+        {!faqatKorish && (
+          <Button className="rounded-xl" onClick={yangiOch}>
+            <Plus className="size-4" /> Yangi shifokor
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -346,24 +350,28 @@ function ShifokorlarSahifa() {
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="rounded-lg"
-                        aria-label="Tahrirlash"
-                        onClick={() => tahrirOch(s)}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="rounded-lg text-destructive"
-                        aria-label="O'chirish"
-                        onClick={() => setOchirish(s)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                      {!faqatKorish && (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="rounded-lg"
+                            aria-label="Tahrirlash"
+                            onClick={() => tahrirOch(s)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="rounded-lg text-destructive"
+                            aria-label="O'chirish"
+                            onClick={() => setOchirish(s)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
 
