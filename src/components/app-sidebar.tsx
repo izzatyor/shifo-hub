@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BedDouble,
   BarChart3,
+  Building2,
   HeartPulse,
   LayoutDashboard,
   LogOut,
@@ -27,7 +28,7 @@ import type { Rol } from "@/hooks/useAuth";
 
 type Item = {
   title: string;
-  url: "/dashboard" | "/dashboard/bemorlar" | "/dashboard/palatalar" | "/dashboard/shifokorlar" | "/dashboard/tolovlar" | "/dashboard/hisobot";
+  url: "/dashboard" | "/dashboard/bemorlar" | "/dashboard/palatalar" | "/dashboard/shifokorlar" | "/dashboard/tolovlar" | "/dashboard/hisobot" | "/dashboard/klinikalar";
   icon: typeof Users;
   rollar: Rol[];
 };
@@ -65,6 +66,12 @@ const ITEMS: Item[] = [
     url: "/dashboard/hisobot",
     icon: BarChart3,
     rollar: ["super_admin", "admin", "rahbar"],
+  },
+  {
+    title: "Klinikalar",
+    url: "/dashboard/klinikalar",
+    icon: Building2,
+    rollar: ["super_admin"],
   },
 ];
 
