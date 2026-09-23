@@ -14,6 +14,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardBemorlarRouteImport } from './routes/dashboard.bemorlar'
 import { Route as DashboardHisobotRouteImport } from './routes/dashboard.hisobot'
+import { Route as DashboardKlinikalarRouteImport } from './routes/dashboard.klinikalar'
 import { Route as DashboardPalatalarRouteImport } from './routes/dashboard.palatalar'
 import { Route as DashboardShifokorlarRouteImport } from './routes/dashboard.shifokorlar'
 import { Route as DashboardTolovlarRouteImport } from './routes/dashboard.tolovlar'
@@ -43,6 +44,11 @@ const DashboardHisobotRoute = DashboardHisobotRouteImport.update({
   path: '/hisobot',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardKlinikalarRoute = DashboardKlinikalarRouteImport.update({
+  id: '/klinikalar',
+  path: '/klinikalar',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardPalatalarRoute = DashboardPalatalarRouteImport.update({
   id: '/palatalar',
   path: '/palatalar',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
   '/dashboard/hisobot': typeof DashboardHisobotRoute
+  '/dashboard/klinikalar': typeof DashboardKlinikalarRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
   '/dashboard/tolovlar': typeof DashboardTolovlarRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
   '/dashboard/hisobot': typeof DashboardHisobotRoute
+  '/dashboard/klinikalar': typeof DashboardKlinikalarRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
   '/dashboard/tolovlar': typeof DashboardTolovlarRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/bemorlar': typeof DashboardBemorlarRoute
   '/dashboard/hisobot': typeof DashboardHisobotRoute
+  '/dashboard/klinikalar': typeof DashboardKlinikalarRoute
   '/dashboard/palatalar': typeof DashboardPalatalarRoute
   '/dashboard/shifokorlar': typeof DashboardShifokorlarRoute
   '/dashboard/tolovlar': typeof DashboardTolovlarRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/bemorlar'
     | '/dashboard/hisobot'
+    | '/dashboard/klinikalar'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
     | '/dashboard/tolovlar'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard/bemorlar'
     | '/dashboard/hisobot'
+    | '/dashboard/klinikalar'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
     | '/dashboard/tolovlar'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/bemorlar'
     | '/dashboard/hisobot'
+    | '/dashboard/klinikalar'
     | '/dashboard/palatalar'
     | '/dashboard/shifokorlar'
     | '/dashboard/tolovlar'
@@ -163,6 +175,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardHisobotRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/klinikalar': {
+      id: '/dashboard/klinikalar'
+      path: '/klinikalar'
+      fullPath: '/dashboard/klinikalar'
+      preLoaderRoute: typeof DashboardKlinikalarRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/palatalar': {
       id: '/dashboard/palatalar'
       path: '/palatalar'
@@ -190,6 +209,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardBemorlarRoute: typeof DashboardBemorlarRoute
   DashboardHisobotRoute: typeof DashboardHisobotRoute
+  DashboardKlinikalarRoute: typeof DashboardKlinikalarRoute
   DashboardPalatalarRoute: typeof DashboardPalatalarRoute
   DashboardShifokorlarRoute: typeof DashboardShifokorlarRoute
   DashboardTolovlarRoute: typeof DashboardTolovlarRoute
@@ -199,6 +219,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBemorlarRoute: DashboardBemorlarRoute,
   DashboardHisobotRoute: DashboardHisobotRoute,
+  DashboardKlinikalarRoute: DashboardKlinikalarRoute,
   DashboardPalatalarRoute: DashboardPalatalarRoute,
   DashboardShifokorlarRoute: DashboardShifokorlarRoute,
   DashboardTolovlarRoute: DashboardTolovlarRoute,
