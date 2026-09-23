@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { useProfil, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/tolovlar")({
   head: () => ({
@@ -84,6 +85,11 @@ type Forma = { patient_id: string; amount: string; method: "naqd" | "karta" | "o
 
 const bosh: Forma = { patient_id: "", amount: "", method: "naqd", purpose: "" };
 
+function XatoMatni({ xabar }: { xabar?: string | undefined }) {
+  if (!xabar) return null;
+  return <p className="text-xs font-medium text-destructive">{xabar}</p>;
+}
+
 const USUL_LABEL: Record<Tolov["method"], string> = {
   naqd: "Naqd",
   karta: "Karta",
@@ -120,6 +126,7 @@ function TolovlarSahifa() {
   const [ochiq, setOchiq] = useState(false);
   const [forma, setForma] = useState<Forma>(bosh);
   const [ochirish, setOchirish] = useState<Tolov | null>(null);
+  const [xatolar, setXatolar] = useState<Record<string, string>>({});
 
   const bemorlar = useQuery({
     queryKey: ["bemorlar-select"],
@@ -162,12 +169,22 @@ function TolovlarSahifa() {
       toast.success("To'lov qabul qilindi");
       setOchiq(false);
       setForma(bosh);
+      setXatolar({});
       qc.invalidateQueries({ queryKey: ["tolovlar"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
     },
     onError: (e: unknown) => {
-      const msg = e instanceof z.ZodError ? e.issues[0]?.message : (e as Error).message;
-      toast.error(msg ?? "Xatolik yuz berdi");
+      if (e instanceof z.ZodError) {
+        const yangiXatolar: Record<string, string> = {};
+        for (const issue of e.issues) {
+          const maydon = String(issue.path[0]);
+          if (!yangiXatolar[maydon]) yangiXatolar[maydon] = issue.message;
+        }
+        setXatolar(yangiXatolar);
+        toast.error("Iltimos, formadagi xatolarni to'g'rilang");
+        return;
+      }
+      toast.error((e as Error).message ?? "Xatolik yuz berdi");
     },
   });
 
@@ -214,7 +231,12 @@ function TolovlarSahifa() {
 
   function yangiOch() {
     setForma(bosh);
+    setXatolar({});
     setOchiq(true);
+  }
+
+  function maydonXato(nomi: string) {
+    return xatolar[nomi];
   }
 
   return (
@@ -385,11 +407,18 @@ function TolovlarSahifa() {
                 type="number"
                 required
                 min={1}
-                className="rounded-xl"
+                className={cn(
+                  "rounded-xl",
+                  maydonXato("amount") && "border-destructive focus-visible:ring-destructive",
+                )}
                 placeholder="150000"
                 value={forma.amount}
-                onChange={(e) => setForma({ ...forma, amount: e.target.value })}
+                onChange={(e) => {
+                  setForma({ ...forma, amount: e.target.value });
+                  if (xatolar["amount"]) setXatolar({ ...xatolar, amount: "" });
+                }}
               />
+              <XatoMatni xabar={maydonXato("amount")} />
             </div>
 
             <div className="space-y-2">
@@ -426,7 +455,10 @@ function TolovlarSahifa() {
                 type="button"
                 variant="outline"
                 className="rounded-xl"
-                onClick={() => setOchiq(false)}
+                onClick={() => {
+                  setOchiq(false);
+                  setXatolar({});
+                }}
               >
                 Bekor qilish
               </Button>
