@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { type ChangeEvent, type KeyboardEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Building2, Loader2, Plus, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { klinikaVaAdminYarat } from "@/lib/klinikalar.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,9 +27,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/dashboard/klinikalar")({
   head: () => ({
     meta: [
-      { title: "Klinikalar — Soliha Shifoxonasi" },
+      { title: "Klinikalar вЂ” Soliha Shifoxonasi" },
       { name: "description", content: "Tizimdagi barcha klinikalarni boshqarish." },
-      { property: "og:title", content: "Klinikalar — Soliha Shifoxonasi" },
+      { property: "og:title", content: "Klinikalar вЂ” Soliha Shifoxonasi" },
       { property: "og:description", content: "Yangi klinika qo'shing va mavjudlarini ko'ring." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -38,12 +40,66 @@ export const Route = createFileRoute("/dashboard/klinikalar")({
 
 type Klinika = { id: string; name: string; created_at: string };
 
+/* ===================== TELEFON: +998 XX XXX XX XX ===================== */
+const TEL_PREFIX = "+998 ";
+
+function telefonRaqamlari(qiymat: string) {
+  let raqamlar = qiymat.replace(/\D/g, "");
+  if (raqamlar.startsWith("998")) raqamlar = raqamlar.slice(3);
+  return raqamlar.slice(0, 9);
+}
+
+function telefonFormat(raqamlar: string) {
+  const kod = raqamlar.slice(0, 2);
+  const uch = raqamlar.slice(2, 5);
+  const ikki1 = raqamlar.slice(5, 7);
+  const ikki2 = raqamlar.slice(7, 9);
+  let natija = TEL_PREFIX;
+  if (kod) natija += kod;
+  if (uch) natija += " " + uch;
+  if (ikki1) natija += " " + ikki1;
+  if (ikki2) natija += " " + ikki2;
+  return natija;
+}
+
+function telefonDbGa(qiymat: string) {
+  const raqamlar = telefonRaqamlari(qiymat);
+  return raqamlar ? `+998${raqamlar}` : "";
+}
+
 const formaSxema = z.object({
   name: z.string().trim().min(2, "Klinika nomi kamida 2 ta belgidan iborat bo'lishi kerak").max(100),
+  address: z.string().trim().max(200).optional().or(z.literal("")),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => telefonRaqamlari(v ?? "").length === 0 || telefonRaqamlari(v ?? "").length === 9, {
+      message: "Telefon raqami to'liq kiritilishi kerak (9 ta raqam)",
+    }),
+  adminFullName: z.string().trim().min(2, "Admin ism-familiyasi kiritilishi shart").max(100),
+  adminEmail: z.string().trim().min(1, "Email kiritilishi shart").email("Email noto'g'ri formatda"),
+  adminParol: z.string().min(8, "Parol kamida 8 ta belgidan iborat bo'lishi kerak").max(72),
 });
 
-type Forma = { name: string };
-const bosh: Forma = { name: "" };
+type Forma = {
+  name: string;
+  address: string;
+  phone: string;
+  adminFullName: string;
+  adminEmail: string;
+  adminParol: string;
+};
+
+const bosh: Forma = {
+  name: "",
+  address: "",
+  phone: "",
+  adminFullName: "",
+  adminEmail: "",
+  adminParol: "",
+};
 
 function XatoMatni({ xabar }: { xabar?: string | undefined }) {
   if (!xabar) return null;
@@ -55,6 +111,7 @@ function KlinikalarSahifa() {
   const { session } = useSession();
   const { data: profil, isLoading: profilYuklanmoqda } = useProfil(session?.user.id);
   const superAdmin = (profil?.rollar ?? []).includes("super_admin");
+  const yarat = useServerFn(klinikaVaAdminYarat);
 
   const [ochiq, setOchiq] = useState(false);
   const [forma, setForma] = useState<Forma>(bosh);
@@ -76,11 +133,19 @@ function KlinikalarSahifa() {
   const saqlash = useMutation({
     mutationFn: async (v: Forma) => {
       const parsed = formaSxema.parse(v);
-      const { error } = await supabase.from("clinics").insert({ name: parsed.name });
-      if (error) throw error;
+      await yarat({
+        data: {
+          name: parsed.name,
+          address: parsed.address || undefined,
+          phone: telefonDbGa(parsed.phone ?? "") || undefined,
+          adminEmail: parsed.adminEmail,
+          adminParol: parsed.adminParol,
+          adminFullName: parsed.adminFullName,
+        },
+      });
     },
     onSuccess: () => {
-      toast.success("Yangi klinika qo'shildi");
+      toast.success("Yangi klinika va admin yaratildi");
       setOchiq(false);
       setForma(bosh);
       setXatolar({});
@@ -106,6 +171,36 @@ function KlinikalarSahifa() {
     setForma(bosh);
     setXatolar({});
     setOchiq(true);
+  }
+
+  function maydonOzgardi(nomi: keyof Forma) {
+    return (e: ChangeEvent<HTMLInputElement>) => {
+      setForma({ ...forma, [nomi]: e.target.value });
+      if (xatolar[nomi]) setXatolar({ ...xatolar, [nomi]: "" });
+    };
+  }
+
+  function telefonOzgardi(e: ChangeEvent<HTMLInputElement>) {
+    const raqamlar = telefonRaqamlari(e.target.value);
+    setForma({ ...forma, phone: raqamlar ? telefonFormat(raqamlar) : "" });
+    if (xatolar["phone"]) setXatolar({ ...xatolar, phone: "" });
+  }
+
+  function telefonFokusda() {
+    if (!forma.phone) setForma({ ...forma, phone: TEL_PREFIX });
+  }
+
+  function telefonKlaviatura(e: KeyboardEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    if (
+      (e.key === "Backspace" || e.key === "Delete") &&
+      input.selectionStart !== null &&
+      input.selectionStart <= TEL_PREFIX.length &&
+      input.selectionEnd !== null &&
+      input.selectionEnd <= TEL_PREFIX.length
+    ) {
+      e.preventDefault();
+    }
   }
 
   if (profilYuklanmoqda) {
@@ -168,12 +263,11 @@ function KlinikalarSahifa() {
       )}
 
       <Dialog open={ochiq} onOpenChange={setOchiq}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-lg rounded-2xl">
           <DialogHeader>
             <DialogTitle>Yangi klinika</DialogTitle>
             <DialogDescription>
-              Klinika nomini kiriting. Admin foydalanuvchini biriktirish Supabase (Lovable) orqali
-              amalga oshiriladi.
+              Klinika va uning birinchi admin foydalanuvchisi bir vaqtda yaratiladi.
             </DialogDescription>
           </DialogHeader>
 
@@ -196,12 +290,93 @@ function KlinikalarSahifa() {
                 )}
                 placeholder="masalan: Shifo Med"
                 value={forma.name}
-                onChange={(e) => {
-                  setForma({ name: e.target.value });
-                  if (xatolar["name"]) setXatolar({ ...xatolar, name: "" });
-                }}
+                onChange={maydonOzgardi("name")}
               />
               <XatoMatni xabar={maydonXato("name")} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="k-manzil">Manzil (ixtiyoriy)</Label>
+                <Input
+                  id="k-manzil"
+                  maxLength={200}
+                  className="rounded-xl"
+                  value={forma.address}
+                  onChange={maydonOzgardi("address")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="k-tel">Telefon (ixtiyoriy)</Label>
+                <Input
+                  id="k-tel"
+                  maxLength={TEL_PREFIX.length + 11}
+                  className={cn(
+                    "rounded-xl font-mono",
+                    maydonXato("phone") && "border-destructive focus-visible:ring-destructive",
+                  )}
+                  placeholder="+998 90 000 00 00"
+                  value={forma.phone}
+                  onFocus={telefonFokusda}
+                  onChange={telefonOzgardi}
+                  onKeyDown={telefonKlaviatura}
+                />
+                <XatoMatni xabar={maydonXato("phone")} />
+              </div>
+            </div>
+
+            <div className="h-px bg-border" />
+            <p className="text-sm font-medium">Birinchi admin</p>
+
+            <div className="space-y-2">
+              <Label htmlFor="k-admin-ism">Admin ism-familiyasi</Label>
+              <Input
+                id="k-admin-ism"
+                required
+                maxLength={100}
+                className={cn(
+                  "rounded-xl",
+                  maydonXato("adminFullName") && "border-destructive focus-visible:ring-destructive",
+                )}
+                value={forma.adminFullName}
+                onChange={maydonOzgardi("adminFullName")}
+              />
+              <XatoMatni xabar={maydonXato("adminFullName")} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="k-admin-email">Admin email</Label>
+              <Input
+                id="k-admin-email"
+                type="email"
+                required
+                className={cn(
+                  "rounded-xl",
+                  maydonXato("adminEmail") && "border-destructive focus-visible:ring-destructive",
+                )}
+                placeholder="admin@klinika.uz"
+                value={forma.adminEmail}
+                onChange={maydonOzgardi("adminEmail")}
+              />
+              <XatoMatni xabar={maydonXato("adminEmail")} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="k-admin-parol">Vaqtinchalik parol</Label>
+              <Input
+                id="k-admin-parol"
+                type="text"
+                required
+                minLength={8}
+                className={cn(
+                  "rounded-xl font-mono",
+                  maydonXato("adminParol") && "border-destructive focus-visible:ring-destructive",
+                )}
+                placeholder="Kamida 8 ta belgi"
+                value={forma.adminParol}
+                onChange={maydonOzgardi("adminParol")}
+              />
+              <XatoMatni xabar={maydonXato("adminParol")} />
             </div>
 
             <DialogFooter>
@@ -218,7 +393,7 @@ function KlinikalarSahifa() {
               </Button>
               <Button type="submit" className="rounded-xl" disabled={saqlash.isPending}>
                 {saqlash.isPending && <Loader2 className="size-4 animate-spin" />}
-                Saqlash
+                Yaratish
               </Button>
             </DialogFooter>
           </form>
