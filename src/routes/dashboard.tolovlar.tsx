@@ -45,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useProfil, useSession } from "@/hooks/useAuth";
+import { useRuxsat } from "@/hooks/useRuxsat";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -120,6 +121,7 @@ function TolovlarSahifa() {
   const { session } = useSession();
   const { data: profil } = useProfil(session?.user.id);
   const clinicId = profil?.clinicId ?? null;
+  const { faqatKorish } = useRuxsat(profil?.rollar ?? []);
 
   const [qidiruv, setQidiruv] = useState("");
   const [filtr, setFiltr] = useState<"bugun" | "hafta" | "barchasi">("bugun");
@@ -248,9 +250,11 @@ function TolovlarSahifa() {
             Bemorlardan qabul qilingan to'lovlar va kassa yozuvlari.
           </p>
         </div>
-        <Button className="rounded-xl" onClick={yangiOch}>
-          <Plus className="size-4" /> To'lov qabul
-        </Button>
+        {!faqatKorish && (
+          <Button className="rounded-xl" onClick={yangiOch}>
+            <Plus className="size-4" /> To'lov qabul
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -350,15 +354,17 @@ function TolovlarSahifa() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{sanaVaqt(t.paid_at)}</TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="rounded-lg text-destructive"
-                      aria-label="O'chirish"
-                      onClick={() => setOchirish(t)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {!faqatKorish && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-lg text-destructive"
+                        aria-label="O'chirish"
+                        onClick={() => setOchirish(t)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
