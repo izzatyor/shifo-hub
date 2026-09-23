@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { type ChangeEvent, type KeyboardEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Pencil, Phone, Plus, Search, Stethoscope, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -42,9 +42,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/dashboard/shifokorlar")({
   head: () => ({
     meta: [
-      { title: "Shifokorlar — Soliha Shifoxonasi" },
+      { title: "Shifokorlar вЂ” Soliha Shifoxonasi" },
       { name: "description", content: "Klinika shifokorlari, mutaxassisligi va faol bemorlari." },
-      { property: "og:title", content: "Shifokorlar — Soliha Shifoxonasi" },
+      { property: "og:title", content: "Shifokorlar вЂ” Soliha Shifoxonasi" },
       { property: "og:description", content: "Shifokorlar ro'yxatini boshqaring." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -62,6 +62,40 @@ type Shifokor = {
   is_active: boolean;
 };
 
+/* ===================== TELEFON: +998 XX XXX XX XX ===================== */
+const TEL_PREFIX = "+998 ";
+
+/** Foydalanuvchi kiritgan ixtiyoriy matndan faqat 9 ta raqamni ("998" dan keyingisini) chiqarib oladi. */
+function telefonRaqamlari(qiymat: string) {
+  let raqamlar = qiymat.replace(/\D/g, "");
+  if (raqamlar.startsWith("998")) raqamlar = raqamlar.slice(3);
+  return raqamlar.slice(0, 9);
+}
+
+/** 9 ta xom raqamni "+998 90 123 45 67" ko'rinishida formatlaydi. */
+function telefonFormat(raqamlar: string) {
+  const kod = raqamlar.slice(0, 2);
+  const uch = raqamlar.slice(2, 5);
+  const ikki1 = raqamlar.slice(5, 7);
+  const ikki2 = raqamlar.slice(7, 9);
+  let natija = TEL_PREFIX;
+  if (kod) natija += kod;
+  if (uch) natija += " " + uch;
+  if (ikki1) natija += " " + ikki1;
+  if (ikki2) natija += " " + ikki2;
+  return natija;
+}
+
+function telefonDbGa(qiymat: string) {
+  const raqamlar = telefonRaqamlari(qiymat);
+  return raqamlar ? `+998${raqamlar}` : "";
+}
+
+function telefonKorsatish(dbQiymat: string | null) {
+  if (!dbQiymat) return "";
+  return telefonFormat(telefonRaqamlari(dbQiymat));
+}
+
 const MUTAXASSISLIKLAR = [
   "Terapevt",
   "Xirurg",
@@ -77,7 +111,14 @@ const MUTAXASSISLIKLAR = [
 const formaSxema = z.object({
   full_name: z.string().trim().min(2, "Ism kamida 2 ta belgidan iborat bo'lsin").max(100),
   specialty: z.string().trim().max(60).optional().or(z.literal("")),
-  phone: z.string().trim().max(30).optional().or(z.literal("")),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => telefonRaqamlari(v ?? "").length === 0 || telefonRaqamlari(v ?? "").length === 9, {
+      message: "Telefon raqami to'liq kiritilishi kerak (9 ta raqam)",
+    }),
 });
 
 type Forma = { full_name: string; specialty: string; phone: string };
@@ -133,7 +174,7 @@ function ShifokorlarSahifa() {
         clinic_id: clinicId,
         full_name: parsed.full_name,
         specialty: parsed.specialty || null,
-        phone: parsed.phone || null,
+        phone: telefonDbGa(parsed.phone ?? "") || null,
       };
       if (tahrirId) {
         const { error } = await supabase.from("doctors").update(yozuv).eq("id", tahrirId);
@@ -173,7 +214,7 @@ function ShifokorlarSahifa() {
     onError: (e: Error) =>
       toast.error(
         e.message.includes("foreign key")
-          ? "Bu shifokorga bemorlar biriktirilgan — avval ularni boshqa shifokorga o'tkazing"
+          ? "Bu shifokorga bemorlar biriktirilgan вЂ” avval ularni boshqa shifokorga o'tkazing"
           : e.message,
       ),
   });
@@ -198,8 +239,35 @@ function ShifokorlarSahifa() {
 
   function tahrirOch(s: Shifokor) {
     setTahrirId(s.id);
-    setForma({ full_name: s.full_name, specialty: s.specialty ?? "", phone: s.phone ?? "" });
+    setForma({
+      full_name: s.full_name,
+      specialty: s.specialty ?? "",
+      phone: telefonKorsatish(s.phone),
+    });
     setOchiq(true);
+  }
+
+  function telefonOzgardi(e: ChangeEvent<HTMLInputElement>) {
+    const raqamlar = telefonRaqamlari(e.target.value);
+    setForma({ ...forma, phone: raqamlar ? telefonFormat(raqamlar) : "" });
+  }
+
+  function telefonFokusda() {
+    if (!forma.phone) setForma({ ...forma, phone: TEL_PREFIX });
+  }
+
+  function telefonKlaviatura(e: KeyboardEvent<HTMLInputElement>) {
+    // Prefiks o'chirilib ketmasin: kursor prefiks ichida bo'lsa Backspace/Delete e'tiborsiz qoldiriladi
+    const input = e.currentTarget;
+    if (
+      (e.key === "Backspace" || e.key === "Delete") &&
+      input.selectionStart !== null &&
+      input.selectionStart <= TEL_PREFIX.length &&
+      input.selectionEnd !== null &&
+      input.selectionEnd <= TEL_PREFIX.length
+    ) {
+      e.preventDefault();
+    }
   }
 
   return (
@@ -280,7 +348,7 @@ function ShifokorlarSahifa() {
                   <div className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2 text-sm">
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Phone className="size-3.5" />
-                      {s.phone ?? "—"}
+                      {telefonKorsatish(s.phone) || "вЂ”"}
                     </span>
                     <span className="flex items-center gap-2 font-medium">
                       <Users className="size-3.5 text-muted-foreground" />
@@ -343,11 +411,13 @@ function ShifokorlarSahifa() {
               <Label htmlFor="s-tel">Telefon</Label>
               <Input
                 id="s-tel"
-                maxLength={30}
-                className="rounded-xl"
+                maxLength={TEL_PREFIX.length + 11}
+                className="rounded-xl font-mono"
                 placeholder="+998 90 000 00 00"
                 value={forma.phone}
-                onChange={(e) => setForma({ ...forma, phone: e.target.value })}
+                onFocus={telefonFokusda}
+                onChange={telefonOzgardi}
+                onKeyDown={telefonKlaviatura}
               />
             </div>
 
