@@ -230,15 +230,15 @@ function HisobotSahifa() {
                     tickFormatter={(v) => somFormat.format(v)}
                   />
                   <Tooltip
-                    cursor={{ fill: "hsl(var(--accent))" }}
+                    cursor={{ fill: "var(--accent)" }}
                     formatter={(value: number) => [pul(value), "Tushum"]}
                     contentStyle={{
                       borderRadius: 12,
-                      border: "1px solid hsl(var(--border))",
-                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid var(--border)",
+                      backgroundColor: "var(--card)",
                     }}
                   />
-                  <Bar dataKey="summa" radius={[8, 8, 0, 0]} fill="hsl(var(--primary))" />
+                  <Bar dataKey="summa" radius={[8, 8, 0, 0]} fill="var(--primary)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
