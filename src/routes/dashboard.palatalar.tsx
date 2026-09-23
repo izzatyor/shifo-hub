@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfil, useSession } from "@/hooks/useAuth";
+import { useRuxsat } from "@/hooks/useRuxsat";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -109,6 +110,7 @@ function PalatalarSahifa() {
   const { session } = useSession();
   const { data: profil } = useProfil(session?.user.id);
   const clinicId = profil?.clinicId ?? null;
+  const { faqatKorish } = useRuxsat(profil?.rollar ?? []);
 
   const [ochiq, setOchiq] = useState(false);
   const [forma, setForma] = useState<Forma>(bosh);
@@ -256,9 +258,11 @@ function PalatalarSahifa() {
             Jami {jami.length} palata В· {jamiBand}/{jamiOrin} o'rin band
           </p>
         </div>
-        <Button className="rounded-xl" onClick={yangiOch}>
-          <Plus className="size-4" /> Yangi palata
-        </Button>
+        {!faqatKorish && (
+          <Button className="rounded-xl" onClick={yangiOch}>
+            <Plus className="size-4" /> Yangi palata
+          </Button>
+        )}
       </div>
 
       {palatalar.isLoading ? (
@@ -300,24 +304,28 @@ function PalatalarSahifa() {
                           <Badge variant="outline" className={`rounded-lg ${turRangi(r.room_type)}`}>
                             {r.room_type ?? "Oddiy"}
                           </Badge>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="rounded-lg"
-                            aria-label="Tahrirlash"
-                            onClick={() => tahrirOch(r)}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="rounded-lg text-destructive"
-                            aria-label="O'chirish"
-                            onClick={() => setOchirish(r)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                          {!faqatKorish && (
+                            <>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="rounded-lg"
+                                aria-label="Tahrirlash"
+                                onClick={() => tahrirOch(r)}
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="rounded-lg text-destructive"
+                                aria-label="O'chirish"
+                                onClick={() => setOchirish(r)}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
 
