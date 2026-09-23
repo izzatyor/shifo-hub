@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useProfil, useSession } from "@/hooks/useAuth";
+import { useRuxsat } from "@/hooks/useRuxsat";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard/bemorlar")({
@@ -233,6 +234,7 @@ function BemorlarSahifa() {
   const { session } = useSession();
   const { data: profil } = useProfil(session?.user.id);
   const clinicId = profil?.clinicId ?? null;
+  const { bemorlarFaqatKorish } = useRuxsat(profil?.rollar ?? []);
 
   const [qidiruv, setQidiruv] = useState("");
   const [ochiq, setOchiq] = useState(false);
@@ -446,9 +448,11 @@ function BemorlarSahifa() {
             Klinika bemorlari ro'yxati, qidiruv va boshqaruv.
           </p>
         </div>
-        <Button className="rounded-xl" onClick={yangiOch}>
-          <Plus className="size-4" /> Yangi bemor
-        </Button>
+        {!bemorlarFaqatKorish && (
+          <Button className="rounded-xl" onClick={yangiOch}>
+            <Plus className="size-4" /> Yangi bemor
+          </Button>
+        )}
       </div>
 
       <Card className="rounded-2xl border-border/70 shadow-sm">
@@ -511,24 +515,28 @@ function BemorlarSahifa() {
                           >
                             <Eye className="size-4" />
                           </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="rounded-lg"
-                            aria-label="Tahrirlash"
-                            onClick={() => tahrirOch(b)}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="rounded-lg text-destructive"
-                            aria-label="O'chirish"
-                            onClick={() => setOchirish(b)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                          {!bemorlarFaqatKorish && (
+                            <>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="rounded-lg"
+                                aria-label="Tahrirlash"
+                                onClick={() => tahrirOch(b)}
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="rounded-lg text-destructive"
+                                aria-label="O'chirish"
+                                onClick={() => setOchirish(b)}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
