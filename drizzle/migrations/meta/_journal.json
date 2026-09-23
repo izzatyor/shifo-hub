@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790155800228,
+      "tag": "0000_doctor_login_and_role_rls",
+      "breakpoints": true
+    }
+  ]
+}

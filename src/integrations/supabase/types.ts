@@ -374,6 +374,7 @@ export type Database = {
     }
     Functions: {
       current_clinic_id: { Args: never; Returns: string }
+      current_doctor_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -382,6 +383,10 @@ export type Database = {
         Returns: boolean
       }
       is_clinic_admin: { Args: never; Returns: boolean }
+      is_only_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
       is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
