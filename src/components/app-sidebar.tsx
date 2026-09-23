@@ -41,7 +41,7 @@ const ITEMS: Item[] = [
     title: "Bemorlar",
     url: "/dashboard/bemorlar",
     icon: Users,
-    rollar: ["super_admin", "admin", "doktor", "qabul", "rahbar"],
+    rollar: ["super_admin", "admin", "doktor", "qabul", "kassa", "rahbar"],
   },
   {
     title: "Palatalar",
