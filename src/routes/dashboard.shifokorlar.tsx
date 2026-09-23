@@ -7,8 +7,7 @@ import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
+import { Card, CardContent } from "@/components/ui/card";import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -38,6 +37,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfil, useSession } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/shifokorlar")({
   head: () => ({
@@ -125,6 +125,11 @@ type Forma = { full_name: string; specialty: string; phone: string };
 
 const bosh: Forma = { full_name: "", specialty: "", phone: "" };
 
+function XatoMatni({ xabar }: { xabar?: string | undefined }) {
+  if (!xabar) return null;
+  return <p className="text-xs font-medium text-destructive">{xabar}</p>;
+}
+
 function ShifokorlarSahifa() {
   const qc = useQueryClient();
   const { session } = useSession();
@@ -136,6 +141,7 @@ function ShifokorlarSahifa() {
   const [forma, setForma] = useState<Forma>(bosh);
   const [tahrirId, setTahrirId] = useState<string | null>(null);
   const [ochirish, setOchirish] = useState<Shifokor | null>(null);
+  const [xatolar, setXatolar] = useState<Record<string, string>>({});
 
   const shifokorlar = useQuery({
     queryKey: ["shifokorlar"],
@@ -189,13 +195,23 @@ function ShifokorlarSahifa() {
       setOchiq(false);
       setForma(bosh);
       setTahrirId(null);
+      setXatolar({});
       qc.invalidateQueries({ queryKey: ["shifokorlar"] });
       qc.invalidateQueries({ queryKey: ["shifokorlar-select"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
     },
     onError: (e: unknown) => {
-      const msg = e instanceof z.ZodError ? e.issues[0]?.message : (e as Error).message;
-      toast.error(msg ?? "Xatolik yuz berdi");
+      if (e instanceof z.ZodError) {
+        const yangiXatolar: Record<string, string> = {};
+        for (const issue of e.issues) {
+          const maydon = String(issue.path[0]);
+          if (!yangiXatolar[maydon]) yangiXatolar[maydon] = issue.message;
+        }
+        setXatolar(yangiXatolar);
+        toast.error("Iltimos, formadagi xatolarni to'g'rilang");
+        return;
+      }
+      toast.error((e as Error).message ?? "Xatolik yuz berdi");
     },
   });
 
@@ -231,9 +247,14 @@ function ShifokorlarSahifa() {
     );
   }, [shifokorlar.data, qidiruv]);
 
+  function maydonXato(nomi: string) {
+    return xatolar[nomi];
+  }
+
   function yangiOch() {
     setTahrirId(null);
     setForma(bosh);
+    setXatolar({});
     setOchiq(true);
   }
 
@@ -244,6 +265,7 @@ function ShifokorlarSahifa() {
       specialty: s.specialty ?? "",
       phone: telefonKorsatish(s.phone),
     });
+    setXatolar({});
     setOchiq(true);
   }
 
@@ -382,10 +404,17 @@ function ShifokorlarSahifa() {
                 id="s-ism"
                 required
                 maxLength={100}
-                className="rounded-xl"
+                className={cn(
+                  "rounded-xl",
+                  maydonXato("full_name") && "border-destructive focus-visible:ring-destructive",
+                )}
                 value={forma.full_name}
-                onChange={(e) => setForma({ ...forma, full_name: e.target.value })}
+                onChange={(e) => {
+                  setForma({ ...forma, full_name: e.target.value });
+                  if (xatolar["full_name"]) setXatolar({ ...xatolar, full_name: "" });
+                }}
               />
+              <XatoMatni xabar={maydonXato("full_name")} />
             </div>
 
             <div className="space-y-2">
@@ -412,13 +441,20 @@ function ShifokorlarSahifa() {
               <Input
                 id="s-tel"
                 maxLength={TEL_PREFIX.length + 11}
-                className="rounded-xl font-mono"
+                className={cn(
+                  "rounded-xl font-mono",
+                  maydonXato("phone") && "border-destructive focus-visible:ring-destructive",
+                )}
                 placeholder="+998 90 000 00 00"
                 value={forma.phone}
                 onFocus={telefonFokusda}
-                onChange={telefonOzgardi}
+                onChange={(e) => {
+                  telefonOzgardi(e);
+                  if (xatolar["phone"]) setXatolar({ ...xatolar, phone: "" });
+                }}
                 onKeyDown={telefonKlaviatura}
               />
+              <XatoMatni xabar={maydonXato("phone")} />
             </div>
 
             <DialogFooter>
@@ -426,7 +462,10 @@ function ShifokorlarSahifa() {
                 type="button"
                 variant="outline"
                 className="rounded-xl"
-                onClick={() => setOchiq(false)}
+                onClick={() => {
+                  setOchiq(false);
+                  setXatolar({});
+                }}
               >
                 Bekor qilish
               </Button>
