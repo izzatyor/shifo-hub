@@ -151,8 +151,8 @@ function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
     ${izoh ? `<tr><td>Izoh</td><td>${izoh}</td></tr>` : ""}
   </table>
   <div class="summa">${pul(Number(t.amount))}</div>
-  <div class="footer">Ushbu hujjat to'lov tasdig'i sifatida chop etildi</div>
-  <script>window.print();</script>
+    <div class="footer">Ushbu hujjat to'lov tasdig'i sifatida chop etildi</div>
+  <button class="chop-tugma" onclick="window.print()">Chop etish</button>
 </body>
 </html>`;
   oyna.document.write(html);
