@@ -55,9 +55,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/dashboard/bemorlar")({
   head: () => ({
     meta: [
-      { title: "Bemorlar вЂ” Soliha Shifoxonasi" },
+      { title: "Bemorlar - Soliha Shifoxonasi" },
       { name: "description", content: "Klinika bemorlari ro'yxati, qidiruv va yangi bemor qo'shish." },
-      { property: "og:title", content: "Bemorlar вЂ” Soliha Shifoxonasi" },
+      { property: "og:title", content: "Bemorlar - Soliha Shifoxonasi" },
       { property: "og:description", content: "Bemorlarni qidiring, qo'shing va kuzating." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -204,9 +204,9 @@ const bosh: Forma = {
 };
 
 function sana(v: string | null) {
-  if (!v) return "вЂ”";
+  if (!v) return "-";
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? "вЂ”" : d.toLocaleDateString("uz-UZ");
+  return Number.isNaN(d.getTime()) ? "-" : d.toLocaleDateString("uz-UZ");
 }
 
 function holatBadge(s: Bemor["status"]) {
@@ -430,7 +430,7 @@ function BemorlarSahifa() {
   function pasportOzgardi(e: ChangeEvent<HTMLInputElement>) {
     const { harflar, raqamlar: eskiRaqamlar } = pasportTozala(forma.passport);
     const kiritilgan = e.target.value.toUpperCase();
-    // Foydalanuvchi harflar qismini o'zgartirdimi yoki raqamlarnimi вЂ” soddalashtirib, umumiy tozalash
+    // Foydalanuvchi harflar qismini o'zgartirdimi yoki raqamlarnimi - soddalashtirib, umumiy tozalash
     const { harflar: yangiHarflar, raqamlar: yangiRaqamlar } = pasportTozala(kiritilgan);
     void harflar;
     void eskiRaqamlar;
@@ -516,12 +516,12 @@ function BemorlarSahifa() {
                     <TableRow key={b.id}>
                       <TableCell className="font-medium">{b.full_name}</TableCell>
                       <TableCell className="font-mono text-sm">
-                        {telefonKorsatish(b.phone) || "вЂ”"}
+                        {telefonKorsatish(b.phone) || "-"}
                       </TableCell>
                       <TableCell>{sana(b.birth_date)}</TableCell>
-                      <TableCell>{b.gender ?? "вЂ”"}</TableCell>
-                      <TableCell>{b.rooms?.number ?? "вЂ”"}</TableCell>
-                      <TableCell>{b.doctors?.full_name ?? "вЂ”"}</TableCell>
+                      <TableCell>{b.gender ?? "-"}</TableCell>
+                      <TableCell>{b.rooms?.number ?? "-"}</TableCell>
+                      <TableCell>{b.doctors?.full_name ?? "-"}</TableCell>
                       <TableCell>{holatBadge(b.status)}</TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
@@ -860,25 +860,25 @@ function BemorlarSahifa() {
           </DialogHeader>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <dt className="text-muted-foreground">Telefon</dt>
-            <dd className="font-mono">{telefonKorsatish(korish?.phone ?? null) || "вЂ”"}</dd>
+            <dd className="font-mono">{telefonKorsatish(korish?.phone ?? null) || "-"}</dd>
             <dt className="text-muted-foreground">Tug'ilgan sana</dt>
             <dd>{sana(korish?.birth_date ?? null)}</dd>
             <dt className="text-muted-foreground">Jinsi</dt>
-            <dd>{korish?.gender ?? "вЂ”"}</dd>
+            <dd>{korish?.gender ?? "-"}</dd>
             <dt className="text-muted-foreground">Palata</dt>
-            <dd>{korish?.rooms?.number ?? "вЂ”"}</dd>
+            <dd>{korish?.rooms?.number ?? "-"}</dd>
             <dt className="text-muted-foreground">Shifokor</dt>
-            <dd>{korish?.doctors?.full_name ?? "вЂ”"}</dd>
+            <dd>{korish?.doctors?.full_name ?? "-"}</dd>
             <dt className="text-muted-foreground">Pasport</dt>
-            <dd>{korish?.passport ?? "вЂ”"}</dd>
+            <dd>{korish?.passport ?? "-"}</dd>
             <dt className="text-muted-foreground">Ish joyi</dt>
-            <dd>{korish?.workplace ?? "вЂ”"}</dd>
+            <dd>{korish?.workplace ?? "-"}</dd>
             <dt className="text-muted-foreground">Imtiyoz</dt>
-            <dd>{korish?.benefit ?? "вЂ”"}</dd>
+            <dd>{korish?.benefit ?? "-"}</dd>
             <dt className="text-muted-foreground">Manzil</dt>
-            <dd className="col-span-1">{korish?.address ?? "вЂ”"}</dd>
+            <dd className="col-span-1">{korish?.address ?? "-"}</dd>
             <dt className="text-muted-foreground">Tashxis</dt>
-            <dd>{korish?.diagnosis ?? "вЂ”"}</dd>
+            <dd>{korish?.diagnosis ?? "-"}</dd>
             <dt className="text-muted-foreground">Holat</dt>
             <dd>{korish ? holatBadge(korish.status) : null}</dd>
           </dl>
