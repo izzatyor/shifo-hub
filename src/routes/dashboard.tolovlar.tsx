@@ -146,7 +146,7 @@ function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
 </head>
 <body>
   <h1>${kavsCiz(klinikaNomi)}</h1>
-  <div class="sana">Kvitansiya В· ${sanaVaqt(t.paid_at)}</div>
+  <div class="sana">Kvitansiya | ${sanaVaqt(t.paid_at)}</div>
   <table>
     <tr><td>Bemor</td><td>${bemorIsmi}</td></tr>
     <tr><td>To'lov turi</td><td>${USUL_LABEL[t.method]}</td></tr>
