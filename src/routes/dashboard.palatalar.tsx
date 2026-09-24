@@ -44,9 +44,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/dashboard/palatalar")({
   head: () => ({
     meta: [
-      { title: "Palatalar вЂ” Soliha Shifoxonasi" },
+      { title: "Palatalar - Soliha Shifoxonasi" },
       { name: "description", content: "Palatalar holati, joylar soni va kunlik narxi." },
-      { property: "og:title", content: "Palatalar вЂ” Soliha Shifoxonasi" },
+      { property: "og:title", content: "Palatalar - Soliha Shifoxonasi" },
       { property: "og:description", content: "Bo'sh va band palatalarni boshqaring." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -207,7 +207,7 @@ function PalatalarSahifa() {
     onError: (e: Error) =>
       toast.error(
         e.message.includes("foreign key")
-          ? "Bu palatada bemorlar joylashtirilgan вЂ” avval ularni ko'chiring"
+          ? "Bu palatada bemorlar joylashtirilgan - avval ularni ko'chiring"
           : e.message,
       ),
   });
