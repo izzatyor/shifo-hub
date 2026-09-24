@@ -12,13 +12,13 @@ import loginHero from "@/assets/login-hero.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Soliha Shifoxonasi — Klinika boshqaruv tizimi" },
+      { title: "Soliha Shifoxonasi - Klinika boshqaruv tizimi" },
       {
         name: "description",
         content:
-          "Soliha Shifoxonasi — ko'p klinikali tibbiy boshqaruv tizimi: bemorlar, palatalar, shifokorlar va to'lovlar bir joyda.",
+          "Soliha Shifoxonasi - ko'p klinikali tibbiy boshqaruv tizimi: bemorlar, palatalar, shifokorlar va to'lovlar bir joyda.",
       },
-      { property: "og:title", content: "Soliha Shifoxonasi — Klinika boshqaruv tizimi" },
+      { property: "og:title", content: "Soliha Shifoxonasi - Klinika boshqaruv tizimi" },
       {
         property: "og:description",
         content: "Klinikangiz uchun zamonaviy boshqaruv tizimi. Tizimga kiring.",
@@ -54,7 +54,7 @@ function LoginPage() {
 
   return (
     <main className="flex min-h-screen bg-background">
-      {/* Chap taraf — bezak */}
+      {/* Chap taraf - bezak */}
       <section className="relative hidden w-1/2 overflow-hidden lg:block">
         <img
           src={loginHero}
@@ -77,7 +77,7 @@ function LoginPage() {
               Klinikangizni bitta oynadan boshqaring
             </h2>
             <p className="mt-4 text-base text-primary-foreground/80">
-              Bemorlar, palatalar, shifokorlar va to'lovlar — har bir klinika uchun alohida va
+              Bemorlar, palatalar, shifokorlar va to'lovlar - har bir klinika uchun alohida va
               xavfsiz muhitda.
             </p>
             <div className="mt-8 flex items-center gap-2 text-sm text-primary-foreground/80">
@@ -88,7 +88,7 @@ function LoginPage() {
         </div>
       </section>
 
-      {/* O'ng taraf — forma */}
+      {/* O'ng taraf - forma */}
       <section className="flex w-full items-center justify-center px-6 py-12 lg:w-1/2">
         <div className="w-full max-w-md">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
@@ -130,7 +130,7 @@ function LoginPage() {
                   type={korsat ? "text" : "password"}
                   required
                   autoComplete="current-password"
-                  placeholder="••••••••"
+                  placeholder="вЂўвЂўвЂўвЂўвЂўвЂўвЂўвЂў"
                   value={parol}
                   onChange={(e) => setParol(e.target.value)}
                   className="h-12 rounded-xl pl-10 pr-11"
