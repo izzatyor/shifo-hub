@@ -255,7 +255,7 @@ function PalatalarSahifa() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Palatalar</h1>
           <p className="text-sm text-muted-foreground">
-            Jami {jami.length} palata В· {jamiBand}/{jamiOrin} o'rin band
+            Jami {jami.length} palata | {jamiBand}/{jamiOrin} o'rin band
           </p>
         </div>
         {!faqatKorish && (
