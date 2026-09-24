@@ -448,7 +448,7 @@ function ShifokorlarSahifa() {
               <Label htmlFor="s-tel">Telefon</Label>
               <Input
                 id="s-tel"
-                maxLength={TEL_PREFIX.length + 11}
+                maxLength={TEL_PREFIX.length + 12}
                 className={cn(
                   "rounded-xl font-mono",
                   maydonXato("phone") && "border-destructive focus-visible:ring-destructive",
