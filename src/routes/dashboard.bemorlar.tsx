@@ -160,7 +160,7 @@ const formaSxema = z.object({
     }),
   birth_date: z.string().trim().min(1, "Tug'ilgan sana tanlanishi shart").max(20),
   gender: z.string().trim().min(1, "Jinsi tanlanishi shart"),
-  room_id: z.string().trim().min(1, "Palata tanlanishi shart"),
+  room_id: z.string().trim().optional().or(z.literal("")),
   doctor_id: z.string().optional().or(z.literal("")),
   status: z.enum(["yotoqda", "ambulator"], {
     message: "Xizmat turi tanlanishi shart",
@@ -173,6 +173,9 @@ const formaSxema = z.object({
     .regex(PASPORT_REGEX, "Pasport formati noto'g'ri (masalan: AB1234567)"),
   workplace: z.string().trim().max(150).optional().or(z.literal("")),
   benefit: z.string().trim().min(1, "Imtiyoz turi tanlanishi shart"),
+}).refine((v) => v.status !== "yotoqda" || !!v.room_id, {
+  message: "Statsionar bemor uchun palata tanlanishi shart",
+  path: ["room_id"],
 });
 
 type Forma = {
@@ -243,6 +246,7 @@ function BemorlarSahifa() {
   const [korish, setKorish] = useState<Bemor | null>(null);
   const [ochirish, setOchirish] = useState<Bemor | null>(null);
   const [chiqarish, setChiqarish] = useState<Bemor | null>(null);
+  const [tahrirRoomId, setTahrirRoomId] = useState<string | null>(null);
   const [sanaOchiq, setSanaOchiq] = useState(false);
   const [xatolar, setXatolar] = useState<Record<string, string>>({});
 
@@ -263,12 +267,17 @@ function BemorlarSahifa() {
   const palatalar = useQuery({
     queryKey: ["palatalar-select"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rooms")
-        .select("id, number, room_type, bed_count")
-        .order("number");
-      if (error) throw error;
-      return data ?? [];
+      const [rooms, band] = await Promise.all([
+        supabase.from("rooms").select("id, number, room_type, bed_count").order("number"),
+        supabase.from("patients").select("room_id").eq("status", "yotoqda"),
+      ]);
+      if (rooms.error) throw rooms.error;
+      if (band.error) throw band.error;
+      const sanoq = new Map<string, number>();
+      for (const p of band.data ?? []) {
+        if (p.room_id) sanoq.set(p.room_id, (sanoq.get(p.room_id) ?? 0) + 1);
+      }
+      return (rooms.data ?? []).map((r) => ({ ...r, band: sanoq.get(r.id) ?? 0 }));
     },
   });
 
@@ -383,6 +392,7 @@ function BemorlarSahifa() {
   function yangiOch() {
     setTahrirId(null);
     setForma(bosh);
+    setTahrirRoomId(null);
     setOchiq(true);
   }
 
@@ -401,6 +411,7 @@ function BemorlarSahifa() {
       workplace: b.workplace ?? "",
       benefit: b.benefit ?? "Pulli",
     });
+    setTahrirRoomId(b.room_id ?? null);
     setOchiq(true);
   }
 
@@ -706,7 +717,7 @@ function BemorlarSahifa() {
 
             <div className="sm:col-span-2 space-y-2">
               <Label>
-                Palata <span className="text-destructive">*</span>
+                Palata {forma.status === "yotoqda" && <span className="text-destructive">*</span>}
               </Label>
               <Select
                 value={forma.room_id}
@@ -723,16 +734,24 @@ function BemorlarSahifa() {
                 >
                   <SelectValue
                     placeholder={
-                      (palatalar.data ?? []).length ? "Palatani tanlang" : "Palatalar mavjud emas"
+                      forma.status === "yotoqda"
+                        ? (palatalar.data ?? []).length
+                          ? "Palatani tanlang"
+                          : "Palatalar mavjud emas"
+                        : "Palatasiz (ambulator)"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {(palatalar.data ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.number} Р’В· {p.room_type ?? "Oddiy"} ({p.bed_count} o'rin)
-                    </SelectItem>
-                  ))}
+                  {(palatalar.data ?? []).map((p) => {
+                    const toliq = p.band >= p.bed_count && p.id !== tahrirRoomId;
+                    return (
+                      <SelectItem key={p.id} value={p.id} disabled={toliq}>
+                        {p.number} | {p.room_type ?? "Oddiy"} ({p.bed_count} o'rin)
+                        {toliq ? " - band" : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <XatoMatni xabar={maydonXato("room_id")} />
