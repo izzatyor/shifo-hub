@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Loader2, Plus, Search, Trash2, Wallet } from "lucide-react";
+import { CreditCard, Loader2, Plus, Printer, Search, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -114,6 +114,49 @@ function usulBadge(m: Tolov["method"]) {
       {USUL_LABEL[m]}
     </Badge>
   );
+}
+
+function kavsCiz(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
+  const oyna = window.open("", "_blank", "width=420,height=600");
+  if (!oyna) return;
+  const bemorIsmi = kavsCiz(t.patients?.full_name ?? "вЂ”");
+  const izoh = t.purpose ? kavsCiz(t.purpose) : "";
+  const html = `<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8" />
+<title>Kvitansiya</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Arial, sans-serif; padding: 24px; color: #111; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sana { color: #666; font-size: 12px; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  td { padding: 6px 0; font-size: 14px; }
+  td:first-child { color: #666; }
+  td:last-child { text-align: right; font-weight: 500; }
+  .summa { font-size: 22px; font-weight: 700; text-align: center; padding: 16px 0; border-top: 1px dashed #999; border-bottom: 1px dashed #999; margin: 16px 0; }
+  .footer { text-align: center; color: #999; font-size: 11px; margin-top: 24px; }
+</style>
+</head>
+<body>
+  <h1>${kavsCiz(klinikaNomi)}</h1>
+  <div class="sana">Kvitansiya В· ${sanaVaqt(t.paid_at)}</div>
+  <table>
+    <tr><td>Bemor</td><td>${bemorIsmi}</td></tr>
+    <tr><td>To'lov turi</td><td>${USUL_LABEL[t.method]}</td></tr>
+    ${izoh ? `<tr><td>Izoh</td><td>${izoh}</td></tr>` : ""}
+  </table>
+  <div class="summa">${pul(Number(t.amount))}</div>
+  <div class="footer">Ushbu hujjat to'lov tasdig'i sifatida chop etildi</div>
+  <script>window.print();</script>
+</body>
+</html>`;
+  oyna.document.write(html);
+  oyna.document.close();
 }
 
 function TolovlarSahifa() {
@@ -354,17 +397,28 @@ function TolovlarSahifa() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{sanaVaqt(t.paid_at)}</TableCell>
                   <TableCell className="text-right">
-                    {!faqatKorish && (
+                    <div className="flex justify-end gap-1">
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="rounded-lg text-destructive"
-                        aria-label="O'chirish"
-                        onClick={() => setOchirish(t)}
+                        className="rounded-lg"
+                        aria-label="Kvitansiya chop etish"
+                        onClick={() => kvitansiyaChopEt(t, profil?.clinicName ?? "Klinika")}
                       >
-                        <Trash2 className="size-4" />
+                        <Printer className="size-4" />
                       </Button>
-                    )}
+                      {!faqatKorish && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="rounded-lg text-destructive"
+                          aria-label="O'chirish"
+                          onClick={() => setOchirish(t)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
