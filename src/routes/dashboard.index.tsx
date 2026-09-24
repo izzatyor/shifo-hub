@@ -9,12 +9,12 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/dashboard/")({
   head: () => ({
     meta: [
-      { title: "Bosh sahifa — Soliha Shifoxonasi" },
+      { title: "Bosh sahifa - Soliha Shifoxonasi" },
       {
         name: "description",
         content: "Klinika statistikasi: bemorlar, shifokorlar, bugungi tushum va bo'sh palatalar.",
       },
-      { property: "og:title", content: "Bosh sahifa — Soliha Shifoxonasi" },
+      { property: "og:title", content: "Bosh sahifa - Soliha Shifoxonasi" },
       { property: "og:description", content: "Klinikangiz bugungi ko'rsatkichlari bir joyda." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
