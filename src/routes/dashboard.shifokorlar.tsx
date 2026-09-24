@@ -43,9 +43,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/dashboard/shifokorlar")({
   head: () => ({
     meta: [
-      { title: "Shifokorlar вЂ” Soliha Shifoxonasi" },
+      { title: "Shifokorlar - Soliha Shifoxonasi" },
       { name: "description", content: "Klinika shifokorlari, mutaxassisligi va faol bemorlari." },
-      { property: "og:title", content: "Shifokorlar вЂ” Soliha Shifoxonasi" },
+      { property: "og:title", content: "Shifokorlar - Soliha Shifoxonasi" },
       { property: "og:description", content: "Shifokorlar ro'yxatini boshqaring." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -232,7 +232,7 @@ function ShifokorlarSahifa() {
     onError: (e: Error) =>
       toast.error(
         e.message.includes("foreign key")
-          ? "Bu shifokorga bemorlar biriktirilgan вЂ” avval ularni boshqa shifokorga o'tkazing"
+          ? "Bu shifokorga bemorlar biriktirilgan - avval ularni boshqa shifokorga o'tkazing"
           : e.message,
       ),
   });
@@ -378,7 +378,7 @@ function ShifokorlarSahifa() {
                   <div className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2 text-sm">
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Phone className="size-3.5" />
-                      {telefonKorsatish(s.phone) || "вЂ”"}
+                      {telefonKorsatish(s.phone) || "-"}
                     </span>
                     <span className="flex items-center gap-2 font-medium">
                       <Users className="size-3.5 text-muted-foreground" />
