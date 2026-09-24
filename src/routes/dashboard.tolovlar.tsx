@@ -52,9 +52,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/dashboard/tolovlar")({
   head: () => ({
     meta: [
-      { title: "To'lovlar вЂ” Soliha Shifoxonasi" },
+      { title: "To'lovlar - Soliha Shifoxonasi" },
       { name: "description", content: "Bemorlardan qabul qilingan to'lovlar va kassa yozuvlari." },
-      { property: "og:title", content: "To'lovlar вЂ” Soliha Shifoxonasi" },
+      { property: "og:title", content: "To'lovlar - Soliha Shifoxonasi" },
       { property: "og:description", content: "Kassa tushumini kuzatib boring." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -103,7 +103,7 @@ function pul(n: number) {
 
 function sanaVaqt(v: string) {
   const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "вЂ”";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleString("uz-UZ", { dateStyle: "short", timeStyle: "short" });
 }
 
@@ -123,7 +123,7 @@ function kavsCiz(s: string) {
 function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
   const oyna = window.open("", "_blank", "width=420,height=600");
   if (!oyna) return;
-  const bemorIsmi = kavsCiz(t.patients?.full_name ?? "вЂ”");
+  const bemorIsmi = kavsCiz(t.patients?.full_name ?? "-");
   const izoh = t.purpose ? kavsCiz(t.purpose) : "";
   const html = `<!doctype html>
 <html lang="uz">
@@ -153,7 +153,7 @@ function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
     ${izoh ? `<tr><td>Izoh</td><td>${izoh}</td></tr>` : ""}
   </table>
   <div class="summa">${pul(Number(t.amount))}</div>
-    <div class="footer">Ushbu hujjat to'lov tasdig'i sifatida chop etildi</div>
+  <div class="footer">Ushbu hujjat to'lov tasdig'i sifatida chop etildi</div>
   <button class="chop-tugma" onclick="window.print()">Chop etish</button>
 </body>
 </html>`;
@@ -391,11 +391,11 @@ function TolovlarSahifa() {
             <TableBody>
               {royxat.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.patients?.full_name ?? "вЂ”"}</TableCell>
+                  <TableCell className="font-medium">{t.patients?.full_name ?? "-"}</TableCell>
                   <TableCell className="font-medium text-primary">{pul(Number(t.amount))}</TableCell>
                   <TableCell>{usulBadge(t.method)}</TableCell>
                   <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                    {t.purpose ?? "вЂ”"}
+                    {t.purpose ?? "-"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{sanaVaqt(t.paid_at)}</TableCell>
                   <TableCell className="text-right">
