@@ -140,6 +140,8 @@ function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
   td:last-child { text-align: right; font-weight: 500; }
   .summa { font-size: 22px; font-weight: 700; text-align: center; padding: 16px 0; border-top: 1px dashed #999; border-bottom: 1px dashed #999; margin: 16px 0; }
   .footer { text-align: center; color: #999; font-size: 11px; margin-top: 24px; }
+  .chop-tugma { display: block; width: 100%; margin-top: 16px; padding: 10px; border: none; border-radius: 8px; background: #111; color: #fff; font-size: 14px; cursor: pointer; }
+  @media print { .chop-tugma { display: none; } }
 </style>
 </head>
 <body>
