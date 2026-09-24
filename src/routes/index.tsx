@@ -130,7 +130,7 @@ function LoginPage() {
                   type={korsat ? "text" : "password"}
                   required
                   autoComplete="current-password"
-                  placeholder="Parolni kiriting"
+                  placeholder="--------"
                   value={parol}
                   onChange={(e) => setParol(e.target.value)}
                   className="h-12 rounded-xl pl-10 pr-11"
