@@ -117,7 +117,7 @@ const formaSxema = z.object({
     .trim()
     .optional()
     .or(z.literal(""))
-    .refine((v) => telefonRaqamlari(v ?? "").length === 0 || telefonRaqamlari(v ?? "").length === 9, {
+    .refine((v) => telefonRaqamlari(v).length === 9, {
       message: "Telefon raqami to'liq kiritilishi kerak (9 ta raqam)",
     }),
 });
