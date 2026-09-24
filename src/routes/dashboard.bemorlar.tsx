@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
-import { CalendarIcon, Eye, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { CalendarIcon, DoorOpen, Eye, Loader2, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -242,6 +242,7 @@ function BemorlarSahifa() {
   const [tahrirId, setTahrirId] = useState<string | null>(null);
   const [korish, setKorish] = useState<Bemor | null>(null);
   const [ochirish, setOchirish] = useState<Bemor | null>(null);
+  const [chiqarish, setChiqarish] = useState<Bemor | null>(null);
   const [sanaOchiq, setSanaOchiq] = useState(false);
   const [xatolar, setXatolar] = useState<Record<string, string>>({});
 
@@ -344,6 +345,24 @@ function BemorlarSahifa() {
     onSuccess: () => {
       toast.success("Bemor o'chirildi");
       setOchirish(null);
+      qc.invalidateQueries({ queryKey: ["bemorlar"] });
+      qc.invalidateQueries({ queryKey: ["palatalar"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const chiqarishMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("patients")
+        .update({ status: "chiqarilgan" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Bemor chiqarildi");
+      setChiqarish(null);
       qc.invalidateQueries({ queryKey: ["bemorlar"] });
       qc.invalidateQueries({ queryKey: ["palatalar"] });
       qc.invalidateQueries({ queryKey: ["dashboard-statistika"] });
@@ -515,6 +534,17 @@ function BemorlarSahifa() {
                           >
                             <Eye className="size-4" />
                           </Button>
+                          {b.status === "yotoqda" && !bemorlarFaqatKorish && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="rounded-lg text-primary"
+                              aria-label="Chiqarish"
+                              onClick={() => setChiqarish(b)}
+                            >
+                              <DoorOpen className="size-4" />
+                            </Button>
+                          )}
                           {!bemorlarFaqatKorish && (
                             <>
                               <Button
@@ -870,6 +900,28 @@ function BemorlarSahifa() {
               onClick={() => ochirish && ochirishMut.mutate(ochirish.id)}
             >
               O'chirish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!chiqarish} onOpenChange={(o) => !o && setChiqarish(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bemorni chiqarasizmi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {chiqarish?.full_name} holati "Chiqib ketdi" deb belgilanadi va palata bo'shaydi. Bu
+              amalni keyinroq "Tahrirlash" orqali qaytarish mumkin.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Bekor qilish</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl"
+              onClick={() => chiqarish && chiqarishMut.mutate(chiqarish.id)}
+            >
+              {chiqarishMut.isPending && <Loader2 className="size-4 animate-spin" />}
+              Chiqarish
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
