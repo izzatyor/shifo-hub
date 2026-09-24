@@ -28,12 +28,12 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/dashboard/hisobot")({
   head: () => ({
     meta: [
-      { title: "Hisobot вЂ” Soliha Shifoxonasi" },
+      { title: "Hisobot - Soliha Shifoxonasi" },
       {
         name: "description",
         content: "Klinikaning kunlik tushum statistikasi va to'lov usullari bo'yicha tahlil.",
       },
-      { property: "og:title", content: "Hisobot вЂ” Soliha Shifoxonasi" },
+      { property: "og:title", content: "Hisobot - Soliha Shifoxonasi" },
       { property: "og:description", content: "Oxirgi 7 kunlik tushum dinamikasi." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
