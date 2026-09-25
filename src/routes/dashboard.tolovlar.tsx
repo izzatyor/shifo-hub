@@ -70,10 +70,20 @@ type Tolov = {
   purpose: string | null;
   paid_at: string;
   patient_id: string | null;
-  patients: { full_name: string } | null;
+  patients: {
+    full_name: string;
+    room_id: string | null;
+    rooms: { number: string } | null;
+    doctors: { full_name: string } | null;
+  } | null;
 };
 
-type Bemor = { id: string; full_name: string };
+type Bemor = {
+  id: string;
+  full_name: string;
+  room_id: string | null;
+  rooms: { number: string; price_per_day: number } | null;
+};
 
 const formaSxema = z.object({
   patient_id: z.string().optional().or(z.literal("")),
@@ -120,11 +130,14 @@ function kavsCiz(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
+function kvitansiyaChopEt(t: Tolov, klinikaNomi: string, kassir: string | null) {
   const oyna = window.open("", "_blank", "width=420,height=600");
   if (!oyna) return;
   const bemorIsmi = kavsCiz(t.patients?.full_name ?? "-");
   const izoh = t.purpose ? kavsCiz(t.purpose) : "";
+  const palata = t.patients?.rooms?.number ? kavsCiz(t.patients.rooms.number) : "";
+  const shifokor = t.patients?.doctors?.full_name ? kavsCiz(t.patients.doctors.full_name) : "";
+  const kvitRaqami = t.id.slice(0, 8).toUpperCase();
   const html = `<!doctype html>
 <html lang="uz">
 <head>
@@ -146,11 +159,14 @@ function kvitansiyaChopEt(t: Tolov, klinikaNomi: string) {
 </head>
 <body>
   <h1>${kavsCiz(klinikaNomi)}</h1>
-  <div class="sana">Kvitansiya | ${sanaVaqt(t.paid_at)}</div>
+  <div class="sana">Kvitansiya No ${kvitRaqami} | ${sanaVaqt(t.paid_at)}</div>
   <table>
     <tr><td>Bemor</td><td>${bemorIsmi}</td></tr>
+    ${palata ? `<tr><td>Palata</td><td>${palata}</td></tr>` : ""}
+    ${shifokor ? `<tr><td>Shifokor</td><td>${shifokor}</td></tr>` : ""}
     <tr><td>To'lov turi</td><td>${USUL_LABEL[t.method]}</td></tr>
     ${izoh ? `<tr><td>Izoh</td><td>${izoh}</td></tr>` : ""}
+    ${kassir ? `<tr><td>Qabul qildi</td><td>${kavsCiz(kassir)}</td></tr>` : ""}
   </table>
   <div class="summa">${pul(Number(t.amount))}</div>
   <div class="footer">Ushbu hujjat to'lov tasdig'i sifatida chop etildi</div>
@@ -180,7 +196,7 @@ function TolovlarSahifa() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("patients")
-        .select("id, full_name")
+        .select("id, full_name, room_id, rooms ( number, price_per_day )")
         .order("full_name");
       if (error) throw error;
       return (data ?? []) as Bemor[];
@@ -192,7 +208,9 @@ function TolovlarSahifa() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("id, amount, method, purpose, paid_at, patient_id, patients ( full_name )")
+        .select(
+          "id, amount, method, purpose, paid_at, patient_id, patients ( full_name, room_id, rooms ( number ), doctors ( full_name ) )",
+        )
         .order("paid_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Tolov[];
@@ -405,7 +423,9 @@ function TolovlarSahifa() {
                         variant="ghost"
                         className="rounded-lg"
                         aria-label="Kvitansiya chop etish"
-                        onClick={() => kvitansiyaChopEt(t, profil?.clinicName ?? "Klinika")}
+                        onClick={() =>
+                          kvitansiyaChopEt(t, profil?.clinicName ?? "Klinika", profil?.fullName ?? null)
+                        }
                       >
                         <Printer className="size-4" />
                       </Button>
@@ -464,6 +484,20 @@ function TolovlarSahifa() {
 
             <div className="space-y-2">
               <Label htmlFor="t-summa">Summa (so'm)</Label>
+              {(() => {
+                const tanlanganBemor = (bemorlar.data ?? []).find((b) => b.id === forma.patient_id);
+                return tanlanganBemor?.rooms ? (
+                  <button
+                    type="button"
+                    className="block text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() =>
+                      setForma({ ...forma, amount: String(tanlanganBemor.rooms!.price_per_day) })
+                    }
+                  >
+                    Palata {tanlanganBemor.rooms.number} narxi: {pul(tanlanganBemor.rooms.price_per_day)} so'm/kun (bosing)
+                  </button>
+                ) : null;
+              })()}
               <Input
                 id="t-summa"
                 type="number"
