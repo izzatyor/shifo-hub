@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep password recovery on the public `/reset-password` route and require a recovery session before updating credentials; regular signed-in sessions must not bypass current-password checks.

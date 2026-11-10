@@ -38,6 +38,29 @@ function LoginPage() {
   const [parol, setParol] = useState("");
   const [korsat, setKorsat] = useState(false);
   const [yuklanmoqda, setYuklanmoqda] = useState(false);
+  const [tiklash, setTiklash] = useState(false);
+
+  async function parolniTiklash() {
+    if (!email.trim()) {
+      toast.error("Elektron pochtangizni kiriting");
+      return;
+    }
+    setTiklash(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error("Tiklash xati yuborilmadi. Qayta urinib ko‘ring.");
+        return;
+      }
+      toast.success("Hisob mavjud bo‘lsa, parolni tiklash xati yuboriladi. Pochtangizni tekshiring.");
+    } catch {
+      toast.error("Aloqa uzildi. Qayta urinib ko‘ring.");
+    } finally {
+      setTiklash(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -147,13 +170,15 @@ function LoginPage() {
             </div>
 
             <div className="flex justify-end">
-              <button
+              <Button
                 type="button"
-                className="text-sm font-medium text-primary hover:underline"
-                onClick={() => toast.info("Parolni tiklash tez orada qo'shiladi")}
+                variant="link"
+                disabled={tiklash}
+                className="h-auto p-0 text-sm font-medium"
+                onClick={parolniTiklash}
               >
                 Parolni unutdingizmi?
-              </button>
+              </Button>
             </div>
 
             <Button
