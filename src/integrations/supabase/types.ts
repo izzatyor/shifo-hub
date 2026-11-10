@@ -336,6 +336,32 @@ export type Database = {
           },
         ]
       }
+      staff_login_attempts: {
+        Row: {
+          attempts: number
+          user_id: string
+          window_started_at: string
+        }
+        Insert: {
+          attempts?: number
+          user_id: string
+          window_started_at?: string
+        }
+        Update: {
+          attempts?: number
+          user_id?: string
+          window_started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_login_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           clinic_id: string | null
@@ -373,8 +399,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_staff_login_attempt: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       current_clinic_id: { Args: never; Returns: string }
       current_doctor_id: { Args: never; Returns: string }
+      finish_staff_creation: {
+        Args: {
+          p_clinic_id: string
+          p_email: string
+          p_full_name: string
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
