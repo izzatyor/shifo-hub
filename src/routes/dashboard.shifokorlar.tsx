@@ -130,7 +130,10 @@ function XatoMatni({ xabar }: { xabar?: string | undefined }) {
   if (!xabar) return null;
   return <p className="text-xs font-medium text-destructive">{xabar}</p>;
 }
-
+function boshHarflar(ism: string) {
+  const sozlar = ism.trim().split(/\s+/).filter(Boolean);
+  return ((sozlar[0]?.[0] ?? "") + (sozlar[1]?.[0] ?? "")).toUpperCase();
+}
 function ShifokorlarSahifa() {
   const qc = useQueryClient();
   const { session } = useSession();
