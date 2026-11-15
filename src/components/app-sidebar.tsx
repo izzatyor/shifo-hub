@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Stethoscope,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
