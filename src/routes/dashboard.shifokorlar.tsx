@@ -342,9 +342,9 @@ function ShifokorlarSahifa() {
                 <CardContent className="space-y-4 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl brand-gradient">
-                        <Stethoscope className="size-5" />
-                      </span>
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl brand-gradient text-sm font-semibold">
+  {boshHarflar(s.full_name)}
+</span>
                       <div className="min-w-0">
                         <p className="truncate font-medium leading-tight">{s.full_name}</p>
                         <Badge variant="secondary" className="mt-1 rounded-lg">
