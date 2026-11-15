@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { adminKlinikasi, xodimSxema } from "./xodimlar.schemas";
-import { xodimniYarat } from "./xodimlar.server";
+import { adminKlinikasi, xodimSxema } from "../src/lib/xodimlar.schemas";
+import { xodimniYarat } from "../src/lib/xodimlar.server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
