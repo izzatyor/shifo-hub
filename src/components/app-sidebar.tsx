@@ -29,7 +29,7 @@ import type { Rol } from "@/hooks/useAuth";
 
 type Item = {
   title: string;
-  url: "/dashboard" | "/dashboard/bemorlar" | "/dashboard/palatalar" | "/dashboard/shifokorlar" | "/dashboard/tolovlar" | "/dashboard/hisobot" | "/dashboard/klinikalar";
+  url: "/dashboard" | "/dashboard/bemorlar" | "/dashboard/palatalar" | "/dashboard/shifokorlar" | "/dashboard/tolovlar" | "/dashboard/hisobot" | "/dashboard/klinikalar" | "/dashboard/xodimlar";
   icon: typeof Users;
   rollar: Rol[];
 };
@@ -73,6 +73,12 @@ const ITEMS: Item[] = [
     url: "/dashboard/klinikalar",
     icon: Building2,
     rollar: ["super_admin"],
+  },
+  {
+    title: "Xodimlar",
+    url: "/dashboard/xodimlar",
+    icon: UserCog,
+    rollar: ["super_admin", "admin"],
   },
 ];
 
