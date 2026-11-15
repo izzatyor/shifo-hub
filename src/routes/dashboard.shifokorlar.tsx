@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { type ChangeEvent, type KeyboardEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Phone, Plus, Search, Trash2, Users } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { KeyRound, Loader2, Pencil, Phone, Plus, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -37,6 +38,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfil, useSession } from "@/hooks/useAuth";
 import { useRuxsat } from "@/hooks/useRuxsat";
+import { shifokorLoginYarat } from "@/lib/shifokorlar.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +63,7 @@ type Shifokor = {
   phone: string | null;
   cabinet: string | null;
   is_active: boolean;
+  user_id: string | null;
 };
 
 /* ===================== TELEFON: +998 XX XXX XX XX ===================== */
@@ -120,11 +123,23 @@ const formaSxema = z.object({
     .refine((v) => telefonRaqamlari(v ?? "").length === 0 || telefonRaqamlari(v ?? "").length === 9, {
       message: "Telefon raqami to'liq kiritilishi kerak (9 ta raqam)",
     }),
+  email: z.string().trim().optional().or(z.literal("")),
+  parol: z.string().optional().or(z.literal("")),
+}).superRefine((v, ctx) => {
+  const emailBor = !!v.email;
+  const parolBor = !!v.parol;
+  if (!emailBor && !parolBor) return;
+  if (!emailBor || !z.string().email().safeParse(v.email).success) {
+    ctx.addIssue({ code: "custom", path: ["email"], message: "To'g'ri email kiriting" });
+  }
+  if (!parolBor || (v.parol ?? "").length < 8) {
+    ctx.addIssue({ code: "custom", path: ["parol"], message: "Parol kamida 8 ta belgi bo'lsin" });
+  }
 });
 
-type Forma = { full_name: string; specialty: string; phone: string };
+type Forma = { full_name: string; specialty: string; phone: string; email: string; parol: string };
 
-const bosh: Forma = { full_name: "", specialty: "", phone: "" };
+const bosh: Forma = { full_name: "", specialty: "", phone: "", email: "", parol: "" };
 
 function XatoMatni({ xabar }: { xabar?: string | undefined }) {
   if (!xabar) return null;
@@ -147,13 +162,15 @@ function ShifokorlarSahifa() {
   const [tahrirId, setTahrirId] = useState<string | null>(null);
   const [ochirish, setOchirish] = useState<Shifokor | null>(null);
   const [xatolar, setXatolar] = useState<Record<string, string>>({});
+  const [loginBor, setLoginBor] = useState(false);
+  const loginYarat = useServerFn(shifokorLoginYarat);
 
   const shifokorlar = useQuery({
     queryKey: ["shifokorlar"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("doctors")
-        .select("id, full_name, specialty, phone, cabinet, is_active")
+        .select("id, full_name, specialty, phone, cabinet, is_active, user_id")
         .order("full_name");
       if (error) throw error;
       return (data ?? []) as Shifokor[];
@@ -187,16 +204,34 @@ function ShifokorlarSahifa() {
         specialty: parsed.specialty || null,
         phone: telefonDbGa(parsed.phone ?? "") || null,
       };
+      const loginKerak = !!(parsed.email && parsed.parol);
+      const loginMalumot = {
+        fullName: parsed.full_name,
+        specialty: parsed.specialty || undefined,
+        phone: telefonDbGa(parsed.phone ?? "") || undefined,
+        email: parsed.email ?? "",
+        parol: parsed.parol ?? "",
+      };
       if (tahrirId) {
         const { error } = await supabase.from("doctors").update(yozuv).eq("id", tahrirId);
         if (error) throw error;
+        if (loginKerak) await loginYarat({ data: { ...loginMalumot, doctorId: tahrirId } });
+      } else if (loginKerak) {
+        await loginYarat({ data: loginMalumot });
       } else {
         const { error } = await supabase.from("doctors").insert(yozuv);
         if (error) throw error;
       }
+      return loginKerak;
     },
-    onSuccess: () => {
-      toast.success(tahrirId ? "Shifokor yangilandi" : "Yangi shifokor qo'shildi");
+    onSuccess: (loginQoshildi) => {
+      toast.success(
+        loginQoshildi
+          ? "Shifokor va uning logini saqlandi"
+          : tahrirId
+            ? "Shifokor yangilandi"
+            : "Yangi shifokor qo'shildi",
+      );
       setOchiq(false);
       setForma(bosh);
       setTahrirId(null);
@@ -259,6 +294,7 @@ function ShifokorlarSahifa() {
   function yangiOch() {
     setTahrirId(null);
     setForma(bosh);
+    setLoginBor(false);
     setXatolar({});
     setOchiq(true);
   }
@@ -269,7 +305,10 @@ function ShifokorlarSahifa() {
       full_name: s.full_name,
       specialty: s.specialty ?? "",
       phone: telefonKorsatish(s.phone),
+      email: "",
+      parol: "",
     });
+    setLoginBor(!!s.user_id);
     setXatolar({});
     setOchiq(true);
   }
@@ -347,9 +386,16 @@ function ShifokorlarSahifa() {
 </span>
                       <div className="min-w-0">
                         <p className="truncate font-medium leading-tight">{s.full_name}</p>
-                        <Badge variant="secondary" className="mt-1 rounded-lg">
-                          {s.specialty ?? "Boshqa"}
-                        </Badge>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <Badge variant="secondary" className="rounded-lg">
+                            {s.specialty ?? "Boshqa"}
+                          </Badge>
+                          {s.user_id && (
+                            <Badge variant="outline" className="gap-1 rounded-lg">
+                              <KeyRound className="size-3" /> Login bor
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
@@ -467,6 +513,59 @@ function ShifokorlarSahifa() {
               />
               <XatoMatni xabar={maydonXato("phone")} />
             </div>
+
+            {!loginBor && !faqatKorish && (
+              <div className="space-y-3 rounded-xl border border-dashed border-border p-3">
+                <p className="text-sm font-medium">Tizimga kirish (ixtiyoriy)</p>
+                <p className="text-xs text-muted-foreground">
+                  To'ldirsangiz, shifokor o'z paneliga kira oladi. Email faqat tizim uchun kerak,
+                  shifokor ism va parol bilan kiradi.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="s-email">Email</Label>
+                  <Input
+                    id="s-email"
+                    type="email"
+                    autoComplete="off"
+                    className={cn(
+                      "rounded-xl",
+                      maydonXato("email") && "border-destructive focus-visible:ring-destructive",
+                    )}
+                    placeholder="shifokor@klinika.uz"
+                    value={forma.email}
+                    onChange={(e) => {
+                      setForma({ ...forma, email: e.target.value });
+                      if (xatolar["email"]) setXatolar({ ...xatolar, email: "" });
+                    }}
+                  />
+                  <XatoMatni xabar={maydonXato("email")} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="s-parol">Parol</Label>
+                  <Input
+                    id="s-parol"
+                    type="text"
+                    autoComplete="off"
+                    className={cn(
+                      "rounded-xl font-mono",
+                      maydonXato("parol") && "border-destructive focus-visible:ring-destructive",
+                    )}
+                    placeholder="Kamida 8 ta belgi"
+                    value={forma.parol}
+                    onChange={(e) => {
+                      setForma({ ...forma, parol: e.target.value });
+                      if (xatolar["parol"]) setXatolar({ ...xatolar, parol: "" });
+                    }}
+                  />
+                  <XatoMatni xabar={maydonXato("parol")} />
+                </div>
+              </div>
+            )}
+            {loginBor && (
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <KeyRound className="size-3.5" /> Bu shifokorga login biriktirilgan.
+              </p>
+            )}
 
             <DialogFooter>
               <Button
