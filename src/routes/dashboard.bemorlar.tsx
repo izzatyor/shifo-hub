@@ -505,7 +505,7 @@ function BemorlarSahifa() {
             </div>
           ) : royxat.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-              Bemorlar topilmadi. "Yangi bemor" tugmasi orqali qo'shing.
+                          {bemorlarFaqatKorish ? "Bemorlar topilmadi." : "Bemorlar topilmadi. \"Yangi bemor\" tugmasi orqali qo'shing."}
             </div>
           ) : (
             <div className="overflow-x-auto">
