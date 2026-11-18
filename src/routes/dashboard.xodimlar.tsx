@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, ShieldAlert, UserCog } from "lucide-react";
+import { KeyRound, Loader2, Plus, Search, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -27,6 +27,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  IsmAvatar,
+  KorinishTugmalari,
+  SaralashTugmasi,
+  type Saralash,
+  saralash,
+  useKorinish,
+} from "@/components/royxat-asboblar";
 import { useProfil, useSession } from "@/hooks/useAuth";
 import { klinikaXodimlari, xodimYarat } from "@/lib/xodimlar.functions";
 import { cn } from "@/lib/utils";
@@ -84,6 +100,9 @@ function XodimlarSahifa() {
   const [ochiq, setOchiq] = useState(false);
   const [forma, setForma] = useState<Forma>(bosh);
   const [xatolar, setXatolar] = useState<Record<string, string>>({});
+  const [qidiruv, setQidiruv] = useState("");
+  const [korinish, setKorinish] = useKorinish("xodimlar");
+  const [tartib, setTartib] = useState<Saralash>("az");
 
   const xodimlar = useQuery({
     queryKey: ["xodimlar", clinicId],
@@ -118,6 +137,19 @@ function XodimlarSahifa() {
     },
   });
 
+  const royxat = useMemo(() => {
+    const q = qidiruv.trim().toLowerCase();
+    const hammasi = xodimlar.data ?? [];
+    const topilgan = q
+      ? hammasi.filter(
+          (x) =>
+            x.fullName.toLowerCase().includes(q) ||
+            x.roles.some((r) => (ROL_NOMI[r] ?? r).toLowerCase().includes(q)),
+        )
+      : hammasi;
+    return saralash(topilgan, tartib, (x) => x.fullName);
+  }, [xodimlar.data, qidiruv, tartib]);
+
   function xato(nomi: string) {
     return xatolar[nomi];
   }
@@ -137,8 +169,6 @@ function XodimlarSahifa() {
       </div>
     );
   }
-
-  const royxat = xodimlar.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -161,6 +191,20 @@ function XodimlarSahifa() {
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-60 max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={qidiruv}
+            onChange={(e) => setQidiruv(e.target.value)}
+            placeholder="Ism yoki rol bo'yicha qidirish"
+            className="rounded-xl pl-9"
+          />
+        </div>
+        <SaralashTugmasi qiymat={tartib} onChange={setTartib} />
+        <KorinishTugmalari qiymat={korinish} onChange={setKorinish} />
+      </div>
+
       {xodimlar.isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2].map((i) => (
@@ -171,27 +215,66 @@ function XodimlarSahifa() {
         <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           Xodimlar topilmadi. "Yangi xodim" tugmasi orqali qo'shing.
         </div>
-      ) : (
+      ) : korinish === "plitka" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {royxat.map((x) => (
             <Card key={x.id} className="rounded-2xl border-border/70 shadow-sm">
               <CardContent className="flex items-center gap-3 p-5">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <UserCog className="size-5" />
-                </span>
+                <IsmAvatar ism={x.fullName} />
                 <div className="min-w-0">
                   <p className="truncate font-medium leading-tight">{x.fullName}</p>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     {x.roles.map((r) => (
                       <Badge key={r} variant="secondary" className="rounded-lg">
                         {ROL_NOMI[r] ?? r}
                       </Badge>
                     ))}
+                    <Badge variant="outline" className="gap-1 rounded-lg">
+                      <KeyRound className="size-3" /> Login bor
+                    </Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Xodim</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Kirish</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {royxat.map((x) => (
+                <TableRow key={x.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <IsmAvatar ism={x.fullName} className="size-9 text-xs" />
+                      <span className="font-medium">{x.fullName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1.5">
+                      {x.roles.map((r) => (
+                        <Badge key={r} variant="secondary" className="rounded-lg">
+                          {ROL_NOMI[r] ?? r}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="gap-1 rounded-lg">
+                      <KeyRound className="size-3" /> Login bor
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
