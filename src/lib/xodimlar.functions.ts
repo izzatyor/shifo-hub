@@ -59,9 +59,9 @@ export const xodimKirish = createServerFn({ method: "POST" })
     const failure = () => ({ ok: false as const, message: "Kirish amalga oshmadi yoki urinishlar chegarasiga yetildi. Keyinroq urinib ko‘ring." });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile, error } = await supabaseAdmin.from("profiles")
-      .select("id").eq("id", data.xodimId).eq("clinic_id", data.clinicId).maybeSingle();
+      .select("id, is_active").eq("id", data.xodimId).maybeSingle();
     if (error) return failure();
-    if (!profile) return failure();
+    if (!profile || !profile.is_active) return failure();
     const { data: roles, error: rolesError } = await supabaseAdmin.from("user_roles")
       .select("role, clinic_id").eq("user_id", profile.id);
     if (rolesError || roles?.some(row => row.role === "super_admin") || !roles?.some(row =>
