@@ -44,10 +44,10 @@ export const klinikaXodimlari = createServerFn({ method: "GET" })
     const eligible = (roles ?? []).filter(row => publicRoles.some(role => role === row.role) && !hidden.has(row.user_id));
     if (!eligible.length) return [];
     const { data: profiles, error: profileError } = await supabaseAdmin.from("profiles")
-      .select("id, full_name").eq("clinic_id", data.clinicId).in("id", eligible.map(row => row.user_id)).order("full_name");
+      .select("id, full_name, is_active").eq("clinic_id", data.clinicId).in("id", eligible.map(row => row.user_id)).order("full_name");
     if (profileError) throw new Error("Xodimlar yuklanmadi");
     return (profiles ?? []).map(profile => ({
-      id: profile.id, fullName: profile.full_name,
+      id: profile.id, fullName: profile.full_name, isActive: profile.is_active,
       roles: eligible.filter(row => row.user_id === profile.id).map(row => row.role),
     }));
   });
