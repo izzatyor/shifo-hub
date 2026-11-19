@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
 
 const ROLLAR = ["Admin", "Doktor", "Qabul", "Kassa", "Rahbar"];
 
-type KlinikaQisqa = { id: string; name: string };
+type XodimQisqa = { id: string; fullName: string; roles: string[]; isActive?: boolean };
 type XodimQisqa = { id: string; fullName: string; roles: string[] };
 
 const ROL_NOMI: Record<string, string> = {
@@ -102,7 +102,7 @@ function LoginPage() {
     (async () => {
       try {
         const royxat = (await xodimlarniOl({ data: { clinicId } })) as XodimQisqa[];
-        if (!bekor) setXodimlar(royxat);
+        if (!bekor) setXodimlar(royxat.filter((x) => x.isActive !== false));
       } catch {
         if (!bekor) toast.error("Xodimlar ro'yxati yuklanmadi");
       }
