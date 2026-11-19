@@ -36,6 +36,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  IsmAvatar,
+  KorinishTugmalari,
+  SaralashTugmasi,
+  type Saralash,
+  saralash,
+  useKorinish,
+} from "@/components/royxat-asboblar";
 import { useProfil, useSession } from "@/hooks/useAuth";
 import { useRuxsat } from "@/hooks/useRuxsat";
 import { shifokorLoginYarat } from "@/lib/shifokorlar.functions";
@@ -145,10 +161,6 @@ function XatoMatni({ xabar }: { xabar?: string | undefined }) {
   if (!xabar) return null;
   return <p className="text-xs font-medium text-destructive">{xabar}</p>;
 }
-function boshHarflar(ism: string) {
-  const sozlar = ism.trim().split(/\s+/).filter(Boolean);
-  return ((sozlar[0]?.[0] ?? "") + (sozlar[1]?.[0] ?? "")).toUpperCase();
-}
 function ShifokorlarSahifa() {
   const qc = useQueryClient();
   const { session } = useSession();
@@ -157,6 +169,8 @@ function ShifokorlarSahifa() {
   const { faqatKorish } = useRuxsat(profil?.rollar ?? []);
 
   const [qidiruv, setQidiruv] = useState("");
+  const [korinish, setKorinish] = useKorinish("shifokorlar");
+  const [tartib, setTartib] = useState<Saralash>("az");
   const [ochiq, setOchiq] = useState(false);
   const [forma, setForma] = useState<Forma>(bosh);
   const [tahrirId, setTahrirId] = useState<string | null>(null);
@@ -171,7 +185,7 @@ function ShifokorlarSahifa() {
       const { data, error } = await supabase
         .from("doctors")
         .select("id, full_name, specialty, phone, cabinet, is_active, user_id")
-        .order("full_name");
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Shifokor[];
     },
@@ -278,14 +292,16 @@ function ShifokorlarSahifa() {
   const royxat = useMemo(() => {
     const q = qidiruv.trim().toLowerCase();
     const hammasi = shifokorlar.data ?? [];
-    if (!q) return hammasi;
-    return hammasi.filter(
-      (s) =>
-        s.full_name.toLowerCase().includes(q) ||
-        (s.specialty ?? "").toLowerCase().includes(q) ||
-        (s.phone ?? "").toLowerCase().includes(q),
-    );
-  }, [shifokorlar.data, qidiruv]);
+    const topilgan = q
+      ? hammasi.filter(
+          (s) =>
+            s.full_name.toLowerCase().includes(q) ||
+            (s.specialty ?? "").toLowerCase().includes(q) ||
+            (s.phone ?? "").toLowerCase().includes(q),
+        )
+      : hammasi;
+    return saralash(topilgan, tartib, (s) => s.full_name);
+  }, [shifokorlar.data, qidiruv, tartib]);
 
   function maydonXato(nomi: string) {
     return xatolar[nomi];
@@ -352,14 +368,18 @@ function ShifokorlarSahifa() {
         )}
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={qidiruv}
-          onChange={(e) => setQidiruv(e.target.value)}
-          placeholder="Ism, mutaxassislik yoki telefon bo'yicha qidirish"
-          className="rounded-xl pl-9"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-60 max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={qidiruv}
+            onChange={(e) => setQidiruv(e.target.value)}
+            placeholder="Ism, mutaxassislik yoki telefon bo'yicha qidirish"
+            className="rounded-xl pl-9"
+          />
+        </div>
+        <SaralashTugmasi qiymat={tartib} onChange={setTartib} />
+        <KorinishTugmalari qiymat={korinish} onChange={setKorinish} />
       </div>
 
       {shifokorlar.isLoading ? (
@@ -372,6 +392,71 @@ function ShifokorlarSahifa() {
         <div className="rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
           Shifokorlar topilmadi. "Yangi shifokor" tugmasi orqali qo'shing.
         </div>
+      ) : korinish === "jadval" ? (
+        <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Shifokor</TableHead>
+                <TableHead>Mutaxassislik</TableHead>
+                <TableHead>Telefon</TableHead>
+                <TableHead>Bemorlar</TableHead>
+                <TableHead>Kirish</TableHead>
+                {!faqatKorish && <TableHead className="text-right">Amallar</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {royxat.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <IsmAvatar ism={s.full_name} className="size-9 text-xs" />
+                      <span className="font-medium">{s.full_name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="rounded-lg">
+                      {s.specialty ?? "Boshqa"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{telefonKorsatish(s.phone) || "-"}</TableCell>
+                  <TableCell>{faolBemorlar.data?.get(s.id) ?? 0}</TableCell>
+                  <TableCell>
+                    {s.user_id ? (
+                      <Badge variant="outline" className="gap-1 rounded-lg">
+                        <KeyRound className="size-3" /> Login bor
+                      </Badge>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  {!faqatKorish && (
+                    <TableCell className="text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-lg"
+                        aria-label="Tahrirlash"
+                        onClick={() => tahrirOch(s)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-lg text-destructive"
+                        aria-label="O'chirish"
+                        onClick={() => setOchirish(s)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {royxat.map((s) => {
@@ -381,9 +466,7 @@ function ShifokorlarSahifa() {
                 <CardContent className="space-y-4 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl brand-gradient text-sm font-semibold">
-  {boshHarflar(s.full_name)}
-</span>
+                      <IsmAvatar ism={s.full_name} />
                       <div className="min-w-0">
                         <p className="truncate font-medium leading-tight">{s.full_name}</p>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
