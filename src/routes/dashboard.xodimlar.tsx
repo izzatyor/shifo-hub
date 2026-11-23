@@ -43,6 +43,7 @@ import {
   saralash,
   useKorinish,
 } from "@/components/royxat-asboblar";
+import { HisobAmallari } from "@/components/hisob-amallari";
 import { useProfil, useSession } from "@/hooks/useAuth";
 import { klinikaXodimlari, xodimYarat } from "@/lib/xodimlar.functions";
 import { cn } from "@/lib/utils";
@@ -61,7 +62,7 @@ export const Route = createFileRoute("/dashboard/xodimlar")({
   component: XodimlarSahifa,
 });
 
-type Xodim = { id: string; fullName: string; roles: string[] };
+type Xodim = { id: string; fullName: string; roles: string[]; isActive?: boolean };
 
 const ROL_NOMI: Record<string, string> = {
   admin: "Administrator",
@@ -94,6 +95,7 @@ function XodimlarSahifa() {
   const { data: profil, isLoading: profilYuklanmoqda } = useProfil(session?.user.id);
   const clinicId = profil?.clinicId ?? null;
   const admin = (profil?.rollar ?? []).some((r) => r === "admin" || r === "super_admin");
+  const superAdmin = (profil?.rollar ?? []).some((r) => r === "super_admin");
   const yaratish = useServerFn(xodimYarat);
   const royxatniOl = useServerFn(klinikaXodimlari);
 
@@ -149,6 +151,35 @@ function XodimlarSahifa() {
       : hammasi;
     return saralash(topilgan, tartib, (x) => x.fullName);
   }, [xodimlar.data, qidiruv, tartib]);
+
+  const yangila = () => qc.invalidateQueries({ queryKey: ["xodimlar"] });
+
+  // Boshqa administratorni faqat bosh admin o'zgartira oladi
+  const tegsaBoladi = (x: Xodim) => superAdmin || !x.roles.includes("admin");
+
+  function amallar(x: Xodim) {
+    if (!tegsaBoladi(x)) return null;
+    return (
+      <HisobAmallari
+        hisob={{ userId: x.id, fullName: x.fullName, roles: x.roles, faol: x.isActive !== false }}
+        tahrir={!x.roles.includes("admin")}
+        ozim={x.id === session?.user.id}
+        onOzgardi={yangila}
+      />
+    );
+  }
+
+  function holatBelgisi(x: Xodim) {
+    return x.isActive === false ? (
+      <Badge variant="destructive" className="rounded-lg">
+        Faol emas
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="gap-1 rounded-lg">
+        <KeyRound className="size-3" /> Login bor
+      </Badge>
+    );
+  }
 
   function xato(nomi: string) {
     return xatolar[nomi];
@@ -218,10 +249,16 @@ function XodimlarSahifa() {
       ) : korinish === "plitka" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {royxat.map((x) => (
-            <Card key={x.id} className="rounded-2xl border-border/70 shadow-sm">
+            <Card
+              key={x.id}
+              className={cn(
+                "rounded-2xl border-border/70 shadow-sm",
+                x.isActive === false && "opacity-60",
+              )}
+            >
               <CardContent className="flex items-center gap-3 p-5">
                 <IsmAvatar ism={x.fullName} />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-medium leading-tight">{x.fullName}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     {x.roles.map((r) => (
@@ -229,11 +266,10 @@ function XodimlarSahifa() {
                         {ROL_NOMI[r] ?? r}
                       </Badge>
                     ))}
-                    <Badge variant="outline" className="gap-1 rounded-lg">
-                      <KeyRound className="size-3" /> Login bor
-                    </Badge>
+                    {holatBelgisi(x)}
                   </div>
                 </div>
+                {amallar(x)}
               </CardContent>
             </Card>
           ))}
@@ -246,11 +282,12 @@ function XodimlarSahifa() {
                 <TableHead>Xodim</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Kirish</TableHead>
+                <TableHead className="text-right">Amallar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {royxat.map((x) => (
-                <TableRow key={x.id}>
+                <TableRow key={x.id} className={cn(x.isActive === false && "opacity-60")}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <IsmAvatar ism={x.fullName} className="size-9 text-xs" />
@@ -266,11 +303,8 @@ function XodimlarSahifa() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="gap-1 rounded-lg">
-                      <KeyRound className="size-3" /> Login bor
-                    </Badge>
-                  </TableCell>
+                  <TableCell>{holatBelgisi(x)}</TableCell>
+                  <TableCell className="text-right">{amallar(x)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
