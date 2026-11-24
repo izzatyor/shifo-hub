@@ -43,7 +43,6 @@ export const Route = createFileRoute("/")({
 const ROLLAR = ["Admin", "Doktor", "Qabul", "Kassa", "Rahbar"];
 
 type XodimQisqa = { id: string; fullName: string; roles: string[]; isActive?: boolean };
-type XodimQisqa = { id: string; fullName: string; roles: string[] };
 
 const ROL_NOMI: Record<string, string> = {
   admin: "Administrator",
