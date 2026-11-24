@@ -57,6 +57,8 @@ import { useRuxsat } from "@/hooks/useRuxsat";
 import { shifokorLoginYarat } from "@/lib/shifokorlar.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { HisobAmallari } from "@/components/hisob-amallari";
+import { xodimniTahrirla } from "@/lib/hisoblar.functions";
 
 export const Route = createFileRoute("/dashboard/shifokorlar")({
   head: () => ({
@@ -167,6 +169,11 @@ function ShifokorlarSahifa() {
   const { data: profil } = useProfil(session?.user.id);
   const clinicId = profil?.clinicId ?? null;
   const { faqatKorish } = useRuxsat(profil?.rollar ?? []);
+  const admin = (profil?.rollar ?? []).some((r) => r === "admin" || r === "super_admin");
+  const hisobYangila = () => {
+    qc.invalidateQueries({ queryKey: ["shifokorlar"] });
+    qc.invalidateQueries({ queryKey: ["shifokorlar-select"] });
+  };
 
   const [qidiruv, setQidiruv] = useState("");
   const [korinish, setKorinish] = useKorinish("shifokorlar");
@@ -178,6 +185,7 @@ function ShifokorlarSahifa() {
   const [xatolar, setXatolar] = useState<Record<string, string>>({});
   const [loginBor, setLoginBor] = useState(false);
   const loginYarat = useServerFn(shifokorLoginYarat);
+  const ismYangila = useServerFn(xodimniTahrirla);
 
   const shifokorlar = useQuery({
     queryKey: ["shifokorlar"],
@@ -229,6 +237,11 @@ function ShifokorlarSahifa() {
       if (tahrirId) {
         const { error } = await supabase.from("doctors").update(yozuv).eq("id", tahrirId);
         if (error) throw error;
+        // Login ro'yxatida ham yangi ism chiqishi uchun (faqat admin)
+        const joriy = shifokorlar.data?.find((d) => d.id === tahrirId);
+        if (admin && joriy?.user_id && joriy.full_name !== parsed.full_name) {
+          await ismYangila({ data: { xodimId: joriy.user_id, fullName: parsed.full_name } });
+        }
         if (loginKerak) await loginYarat({ data: { ...loginMalumot, doctorId: tahrirId } });
       } else if (loginKerak) {
         await loginYarat({ data: loginMalumot });
@@ -407,7 +420,7 @@ function ShifokorlarSahifa() {
             </TableHeader>
             <TableBody>
               {royxat.map((s) => (
-                <TableRow key={s.id}>
+                <TableRow key={s.id} className={cn(!s.is_active && "opacity-60")}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <IsmAvatar ism={s.full_name} className="size-9 text-xs" />
@@ -422,7 +435,11 @@ function ShifokorlarSahifa() {
                   <TableCell>{telefonKorsatish(s.phone) || "-"}</TableCell>
                   <TableCell>{faolBemorlar.data?.get(s.id) ?? 0}</TableCell>
                   <TableCell>
-                    {s.user_id ? (
+                    {!s.is_active ? (
+                      <Badge variant="destructive" className="rounded-lg">
+                        Faol emas
+                      </Badge>
+                    ) : s.user_id ? (
                       <Badge variant="outline" className="gap-1 rounded-lg">
                         <KeyRound className="size-3" /> Login bor
                       </Badge>
@@ -432,6 +449,13 @@ function ShifokorlarSahifa() {
                   </TableCell>
                   {!faqatKorish && (
                     <TableCell className="text-right">
+                      {admin && s.user_id && (
+                        <HisobAmallari
+                          hisob={{ userId: s.user_id, fullName: s.full_name, roles: ["doktor"], faol: s.is_active }}
+                          tahrir={false}
+                          onOzgardi={hisobYangila}
+                        />
+                      )}
                       <Button
                         size="icon"
                         variant="ghost"
@@ -462,7 +486,10 @@ function ShifokorlarSahifa() {
           {royxat.map((s) => {
             const bemorSoni = faolBemorlar.data?.get(s.id) ?? 0;
             return (
-              <Card key={s.id} className="rounded-2xl border-border/70 shadow-sm">
+              <Card
+                key={s.id}
+                className={cn("rounded-2xl border-border/70 shadow-sm", !s.is_active && "opacity-60")}
+              >
                 <CardContent className="space-y-4 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -478,10 +505,22 @@ function ShifokorlarSahifa() {
                               <KeyRound className="size-3" /> Login bor
                             </Badge>
                           )}
+                          {!s.is_active && (
+                            <Badge variant="destructive" className="rounded-lg">
+                              Faol emas
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
+                      {admin && s.user_id && (
+                        <HisobAmallari
+                          hisob={{ userId: s.user_id, fullName: s.full_name, roles: ["doktor"], faol: s.is_active }}
+                          tahrir={false}
+                          onOzgardi={hisobYangila}
+                        />
+                      )}
                       {!faqatKorish && (
                         <>
                           <Button
